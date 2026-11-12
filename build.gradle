@@ -37,4 +37,21 @@ subprojects {
     tasks.withType(ProcessResources).configureEach {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
+
+    // 许可证随产物分发；manifest 版本供 mods.toml 的 ${file.jarVersion} 读取
+    tasks.withType(Jar).configureEach {
+        manifest {
+            attributes(
+                    'Implementation-Title': mod_name,
+                    'Implementation-Version': project.version
+            )
+        }
+    }
+
+    tasks.named('jar') {
+        from(rootProject.file('LICENSE'))
+        from(rootProject.file('LICENSE-LGPL-2.1.md'))
+        from(rootProject.file('LICENSING.md'))
+        from(rootProject.file('LICENSE-ASSETS.md'))
+    }
 }
