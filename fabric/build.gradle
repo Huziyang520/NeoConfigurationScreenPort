@@ -2,7 +2,9 @@ plugins {
     id 'fabric-loom'
 }
 
-sourceSets.main.java.srcDirs += ['../common/src/main/java']
+// Neo Configuration Screen Port: the screen is ported against Forge classes (ForgeConfigSpec, ConfigTracker),
+// so the shared sources stay out of the Fabric module until the Fabric adapter lands.
+// sourceSets.main.java.srcDirs += ['../common/src/main/java']
 sourceSets.main.resources.srcDirs += ['../common/src/main/resources']
 
 dependencies {
