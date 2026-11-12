@@ -25,7 +25,3 @@ The full license text is shipped with every jar as `LICENSE-LGPL-2.1.md`.
 
 Classes adapted from Forge Config API Port (https://github.com/Fuzss/forge-config-api-port) remain under the Mozilla
 Public License 2.0, with their original copyright notices retained.
-
-## Assets
-
-Textures, icons and language files created for this project are licensed separately, see `NOTICE-ASSETS.md`.

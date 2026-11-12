@@ -52,6 +52,5 @@ subprojects {
         from(rootProject.file('LICENSE'))
         from(rootProject.file('LICENSE-LGPL-2.1.md'))
         from(rootProject.file('LICENSING.md'))
-        from(rootProject.file('NOTICE-ASSETS.md'))
     }
 }
