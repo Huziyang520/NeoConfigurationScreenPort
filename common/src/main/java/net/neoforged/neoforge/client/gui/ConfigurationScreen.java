@@ -193,9 +193,14 @@ public final class ConfigurationScreen extends OptionsSubScreen {
      */
     private static final String SECTION_TEXT = LANG_PREFIX + "sectiontext";
     /**
-     * The breadcrumb separator. Default: "%s > %s"
+     * The breadcrumb separator component.
      */
-    private static final String CRUMB = LANG_PREFIX + "breadcrumb";
+    public static final Component CRUMB_SEPARATOR = Component.translatable(LANG_PREFIX + "breadcrumb.separator")
+            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+    /**
+     * The breadcrumb format. Default: "%1$s %2$s %3$s"
+     */
+    private static final String CRUMB = LANG_PREFIX + "breadcrumb.order";
     /**
      * The label of list elements. Will be supplied the index into the list. Default: "%s:"
      */
@@ -209,15 +214,15 @@ public final class ConfigurationScreen extends OptionsSubScreen {
      */
     private static final String FILENAME_TOOLTIP = LANG_PREFIX + "filenametooltip";
 
-    public static final Component TOOLTIP_CANNOT_EDIT_THIS_WHILE_ONLINE = Component.translatable(LANG_PREFIX + "notonline");
-    public static final Component TOOLTIP_CANNOT_EDIT_THIS_WHILE_OPEN_TO_LAN = Component.translatable(LANG_PREFIX + "notlan");
-    public static final Component TOOLTIP_CANNOT_EDIT_NOT_LOADED = Component.translatable(LANG_PREFIX + "notloaded");
+    public static final Component TOOLTIP_CANNOT_EDIT_THIS_WHILE_ONLINE = Component.translatable(LANG_PREFIX + "notonline").withStyle(ChatFormatting.RED);
+    public static final Component TOOLTIP_CANNOT_EDIT_THIS_WHILE_OPEN_TO_LAN = Component.translatable(LANG_PREFIX + "notlan").withStyle(ChatFormatting.RED);
+    public static final Component TOOLTIP_CANNOT_EDIT_NOT_LOADED = Component.translatable(LANG_PREFIX + "notloaded").withStyle(ChatFormatting.RED);
     public static final Component NEW_LIST_ELEMENT = Component.translatable(LANG_PREFIX + "newlistelement");
     public static final Component MOVE_LIST_ELEMENT_UP = Component.translatable(LANG_PREFIX + "listelementup");
     public static final Component MOVE_LIST_ELEMENT_DOWN = Component.translatable(LANG_PREFIX + "listelementdown");
     public static final Component REMOVE_LIST_ELEMENT = Component.translatable(LANG_PREFIX + "listelementremove");
-    public static final Component UNSUPPORTED_ELEMENT = Component.translatable(LANG_PREFIX + "unsupportedelement");
-    public static final Component LONG_STRING = Component.translatable(LANG_PREFIX + "longstring");
+    public static final Component UNSUPPORTED_ELEMENT = Component.translatable(LANG_PREFIX + "unsupportedelement").withStyle(ChatFormatting.RED);
+    public static final Component LONG_STRING = Component.translatable(LANG_PREFIX + "longstring").withStyle(ChatFormatting.RED);
     public static final Component GAME_RESTART_TITLE = Component.translatable(LANG_PREFIX + "restart.game.title");
     public static final Component GAME_RESTART_MESSAGE = Component.translatable(LANG_PREFIX + "restart.game.text");
     public static final Component GAME_RESTART_YES = Component.translatable("menu.quit"); // TitleScreen.init() et.al.
@@ -226,7 +231,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
     public static final Component RETURN_TO_MENU = Component.translatable("menu.returnToMenu"); // PauseScreen.RETURN_TO_MENU
     public static final Component SAVING_LEVEL = Component.translatable("menu.savingLevel"); // PauseScreen.SAVING_LEVEL
     public static final Component RESTART_NO = Component.translatable(LANG_PREFIX + "restart.return");
-    public static final Component RESTART_NO_TOOLTIP = Component.translatable(LANG_PREFIX + "restart.return.tooltip");
+    public static final Component RESTART_NO_TOOLTIP = Component.translatable(LANG_PREFIX + "restart.return.tooltip").withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
     public static final Component UNDO = Component.translatable(LANG_PREFIX + "undo");
     public static final Component UNDO_TOOLTIP = Component.translatable(LANG_PREFIX + "undo.tooltip");
     public static final Component RESET = Component.translatable(LANG_PREFIX + "reset");
@@ -531,7 +536,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
          */
         public ConfigurationSectionScreen(final Context parentContext, final Screen parent, final Map<String, Object> valueSpecs, final String key,
                                           final Set<? extends Entry> entrySet, Component title) {
-            this(Context.section(parentContext, parent, entrySet, valueSpecs, key), Component.translatable(CRUMB, parent.getTitle(), title));
+            this(Context.section(parentContext, parent, entrySet, valueSpecs, key),
+                    Component.translatable(CRUMB, parent.getTitle(), CRUMB_SEPARATOR, title));
         }
 
         @SuppressWarnings("resource")
@@ -565,7 +571,15 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         }
 
         protected MutableComponent getTranslationComponent(final String key) {
-            return Component.translatable(translationChecker.check(getTranslationKey(key)));
+            // A missing translation must not surface the raw key in the UI, so fall back to the key's last segment.
+            return Component.translatable(translationChecker.check(getTranslationKey(key), humanize(key)));
+        }
+
+        /** Turns a config key into a readable label: {@code showTooltips} becomes {@code Show tooltips}. */
+        protected static String humanize(final String key) {
+            final String words = key.replace('_', ' ').replace('-', ' ')
+                    .replaceAll("([a-z0-9])([A-Z])", "$1 $2");
+            return words.isEmpty() ? key : Character.toUpperCase(words.charAt(0)) + words.substring(1);
         }
 
         // Neo Configuration Screen Port: Forge has no ListValueSpec; lists are recognised by their value class
@@ -591,7 +605,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 component = component.append(Component.literal("\n\n")).append(Component.translatableWithFallback(tooltipKey, comment));
             }
             if (hasTranslatedTooltip && range != null) {
-                component = component.append(Component.translatable(RANGE_TOOLTIP, range.toString()));
+                component = component.append(Component.literal("\n\n"))
+                        .append(Component.translatable(RANGE_TOOLTIP, range.toString()).withStyle(ChatFormatting.GRAY));
             }
             return component;
         }
@@ -626,23 +641,25 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     final Object rawValue = entry.getRawValue();
                     // Neo Configuration Screen Port: pattern switch -> if/else chain (1.20.1 runs on Java 17)
                     if (rawValue instanceof ConfigValue cv) {
-                        // Neo Configuration Screen Port: Forge keeps no ValueSpec per entry, so the value type comes from the default
+                        // Neo Configuration Screen Port: the value type still comes from the default, the ValueSpec adds range/validator
                         final Object defaultValue = cv.getDefault();
+                        final ValueSpec valueSpec = getValueSpec(key);
                         Element element;
-                        if (defaultValue instanceof Boolean) {
-                            element = createBooleanValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        if (isListSpec(valueSpec) || defaultValue instanceof java.util.List<?>) {
+                            element = createList(key, valueSpec, cv);
+                        } else if (defaultValue instanceof Boolean) {
+                            element = createBooleanValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
                         } else if (defaultValue instanceof Integer) {
-                            element = createIntegerValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                            element = createIntegerValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
                         } else if (defaultValue instanceof Long) {
-                            element = createLongValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                            element = createLongValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
                         } else if (defaultValue instanceof Double) {
-                            element = createDoubleValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                            element = createDoubleValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
                         } else if (defaultValue instanceof String) {
-                            element = createStringValue(key, value -> true, (Supplier) cv::get, (Consumer) cv::set);
+                            element = createStringValue(key, v -> valueSpec == null || valueSpec.test(v),
+                                    (Supplier) cv::get, (Consumer) cv::set);
                         } else if (defaultValue instanceof Enum<?>) {
-                            element = createEnumValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
-                        } else if (defaultValue instanceof java.util.List<?>) {
-                            element = createList(key, null, cv);
+                            element = createEnumValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
                         } else {
                             element = createOtherValue(key, cv);
                         }
@@ -911,7 +928,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null),
                     Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
                                     button -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
-                                            k -> new ConfigurationSectionScreen(context, this, subconfig.valueMap(), key, subsection.entrySet(), Component.translatable(getTranslationKey(key))).rebuild())))
+                                            k -> new ConfigurationSectionScreen(context, this, subconfig.valueMap(), key, subsection.entrySet(), getTranslationComponent(key)).rebuild())))
                             .tooltip(Tooltip.create(getTooltipComponent(key, null)))
                             .width(Button.DEFAULT_WIDTH)
                             .build(),
@@ -923,7 +940,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null),
                     Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
                                     button -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
-                                            k -> new ConfigurationListScreen<>(Context.list(context, this), key, Component.translatable(CRUMB, this.getTitle(), getTranslationComponent(key)), spec, list)).rebuild()))
+                                            k -> new ConfigurationListScreen<>(Context.list(context, this), key, Component.translatable(CRUMB, this.getTitle(), CRUMB_SEPARATOR, getTranslationComponent(key)), spec, list)).rebuild()))
                             .tooltip(Tooltip.create(getTooltipComponent(key, null))).build(),
                     false);
         }

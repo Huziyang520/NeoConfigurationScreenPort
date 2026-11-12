@@ -21,6 +21,12 @@ import net.minecraft.network.chat.Component;
  */
 public class OptionsSubScreen extends Screen {
     private static final org.slf4j.Logger LOGGER = LogUtils.getLogger();
+    /** Same header/footer split as 1.21's default {@code HeaderAndFooterLayout}. */
+    private static final int HEADER_HEIGHT = 33;
+    private static final int FOOTER_HEIGHT = 36;
+    private static final int BUTTON_SPACING = 8;
+    /** 1.20.1 has no {@code Button.BIG_WIDTH}; 1.21's footer uses 200 for the lone done button. */
+    private static final int WIDE_BUTTON_WIDTH = 200;
     private boolean loggedOnce;
     protected final Screen lastScreen;
     protected final Options options;
@@ -42,7 +48,8 @@ public class OptionsSubScreen extends Screen {
         this.doneButton = null;
         this.undoButton = null;
         this.resetButton = null;
-        this.list = new ConfigOptionsList(this.minecraft, this.width, this.height - 32 - 36, 32, 24);
+        this.list = new ConfigOptionsList(this.minecraft, this.width, this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
+                HEADER_HEIGHT, 24);
         this.addRenderableWidget(this.list);
         this.addOptions();
         this.createFooter();
@@ -50,21 +57,35 @@ public class OptionsSubScreen extends Screen {
                 this.width, this.height, this.list.getWidth(), this.list.getHeight(), this.list.children().size());
     }
 
+    /**
+     * Footer mirroring 1.21: a single wide "done" when there is nothing to undo, otherwise
+     * undo/reset/done as one centred row of equally sized buttons.
+     */
     protected void createFooter() {
-        if (this.doneButton == null) {
+        final boolean grouped = this.undoButton != null || this.resetButton != null;
+        final int doneWidth = grouped ? Button.SMALL_WIDTH : WIDE_BUTTON_WIDTH;
+        if (this.doneButton == null || this.doneButton.getWidth() != doneWidth) {
             this.doneButton = Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
-                    .width(Button.DEFAULT_WIDTH).build();
+                    .width(doneWidth).build();
         }
-        final int y = this.height - 28;
-        this.place(this.doneButton, this.width / 2 + 4, y);
-        int right = this.width / 2 - 4;
-        if (this.resetButton != null) {
-            this.place(this.resetButton, right - this.resetButton.getWidth(), y);
-            right -= this.resetButton.getWidth() + 4;
-        }
+        int total = this.doneButton.getWidth();
         if (this.undoButton != null) {
-            this.place(this.undoButton, right - this.undoButton.getWidth(), y);
+            total += this.undoButton.getWidth() + BUTTON_SPACING;
         }
+        if (this.resetButton != null) {
+            total += this.resetButton.getWidth() + BUTTON_SPACING;
+        }
+        final int y = this.height - FOOTER_HEIGHT + (FOOTER_HEIGHT - Button.DEFAULT_HEIGHT) / 2;
+        int x = (this.width - total) / 2;
+        if (this.undoButton != null) {
+            this.place(this.undoButton, x, y);
+            x += this.undoButton.getWidth() + BUTTON_SPACING;
+        }
+        if (this.resetButton != null) {
+            this.place(this.resetButton, x, y);
+            x += this.resetButton.getWidth() + BUTTON_SPACING;
+        }
+        this.place(this.doneButton, x, y);
     }
 
     private void place(final AbstractWidget widget, final int x, final int y) {

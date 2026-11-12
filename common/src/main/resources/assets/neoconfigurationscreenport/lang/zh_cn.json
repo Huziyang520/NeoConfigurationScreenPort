@@ -26,7 +26,6 @@
   "neoforge.configuration.uitext.longstring": "该值太长，无法在UI中编辑。请在配置文件中编辑它。",
   "neoforge.configuration.uitext.section": "%s…",
   "neoforge.configuration.uitext.sectiontext": "编辑",
-  "neoforge.configuration.uitext.breadcrumb": "%s > %s",
   "neoforge.configuration.uitext.breadcrumb.order": "%1$s %2$s %3$s",
   "neoforge.configuration.uitext.breadcrumb.separator": ">",
   "neoforge.configuration.uitext.listelement": "%s:",
@@ -56,5 +55,9 @@
   "neoforge.configuration.section.neoforge.common.toml": "通用设置",
   "neoforge.configuration.section.neoforge.common.toml.title": "通用设置",
   "neoforge.configuration.section.neoforge.server.toml": "服务端设置",
-  "neoforge.configuration.section.neoforge.server.toml.title": "服务端设置"
+  "neoforge.configuration.section.neoforge.server.toml.title": "服务端设置",
+  "neoconfigurationscreenport.configuration.screen": "界面",
+  "neoconfigurationscreenport.configuration.title.server": "%s 服务端配置",
+  "neoconfigurationscreenport.configuration.title.common": "%s 通用配置",
+  "neoconfigurationscreenport.configuration.title.startup": "%s 启动时配置"
 }
