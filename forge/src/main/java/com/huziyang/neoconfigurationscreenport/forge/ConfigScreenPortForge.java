@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-package com.huziyang.configscreenport.forge;
+package com.huziyang.neoconfigurationscreenport.forge;
 
-import com.huziyang.configscreenport.ConfigScreenPort;
+import com.huziyang.neoconfigurationscreenport.ConfigScreenPort;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod(ConfigScreenPort.MOD_ID)

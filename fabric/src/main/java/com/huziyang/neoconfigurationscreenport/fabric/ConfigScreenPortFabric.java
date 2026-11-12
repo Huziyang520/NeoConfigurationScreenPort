@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-package com.huziyang.configscreenport.fabric;
+package com.huziyang.neoconfigurationscreenport.fabric;
 
 import net.fabricmc.api.ClientModInitializer;
 

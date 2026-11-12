@@ -1,4 +1,4 @@
-# Configuration Screen Port
+# Neo Configuration Screen Port
 
 An unofficial port of NeoForge's in-game configuration screen to other mod loaders, so that a mod's
 configuration UI looks and behaves the same everywhere it runs.
