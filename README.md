@@ -22,4 +22,4 @@ The jars land in `forge/build/libs` and `fabric/build/libs`.
 ## License
 
 Mozilla Public License 2.0, except where a file header states otherwise. See `LICENSING.md` for the
-list of adapted sources and `LICENSE-ASSETS.md` for art assets.
+list of adapted sources and `NOTICE-ASSETS.md` for art assets.

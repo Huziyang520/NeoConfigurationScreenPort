@@ -28,4 +28,4 @@ Public License 2.0, with their original copyright notices retained.
 
 ## Assets
 
-Textures, icons and language files created for this project are licensed separately, see `LICENSE-ASSETS.md`.
+Textures, icons and language files created for this project are licensed separately, see `NOTICE-ASSETS.md`.
