@@ -1,0 +1,40 @@
+plugins {
+    id 'fabric-loom' version '1.8-SNAPSHOT' apply false
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)' apply false
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    group = mod_group
+    version = mod_version
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(17)
+    }
+
+    repositories {
+        // 国内镜像放在官方源之前
+        maven { name = 'Aliyun Central'; url = 'https://maven.aliyun.com/repository/central' }
+        maven { name = 'Aliyun Public'; url = 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+        maven { name = 'Forge'; url = 'https://maven.minecraftforge.net/' }
+        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+        maven { name = 'Sponge'; url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' }
+    }
+
+    // 产物名 <mod_id>-<version>-<loader>-<MC>
+    tasks.withType(AbstractArchiveTask).configureEach {
+        archiveBaseName = "${mod_id}-${mod_version}-${project.name}-${minecraft_version}"
+        archiveVersion = ''
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(ProcessResources).configureEach {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+}

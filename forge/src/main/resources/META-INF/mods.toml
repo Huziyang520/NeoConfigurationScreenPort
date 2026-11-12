@@ -1,0 +1,19 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MPL-2.0"
+issueTrackerURL="https://github.com/Huziyang520/ConfigurationScreenPort/issues"
+
+[[mods]]
+modId="configscreenport"
+version="${file.jarVersion}"
+displayName="Configuration Screen Port"
+authors="Huziyang520"
+displayURL="https://github.com/Huziyang520/ConfigurationScreenPort"
+description='''[EN] Unofficial port of NeoForge's in-game configuration screen to Forge and Fabric. [CN] 把 NeoForge 的配置界面移植到 Forge 与 Fabric。 Issues: https://github.com/Huziyang520/ConfigurationScreenPort/issues'''
+
+[[dependencies.configscreenport]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="CLIENT"

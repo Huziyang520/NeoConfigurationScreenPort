@@ -1,0 +1,33 @@
+plugins {
+    id 'fabric-loom'
+}
+
+sourceSets.main.java.srcDirs += ['../common/src/main/java']
+sourceSets.main.resources.srcDirs += ['../common/src/main/resources']
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    // 与 Forge 侧使用同一套官方映射，共享源码才能直接编译
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    // Forge Config API Port：Fabric 侧的配置数据源，编译期依赖，运行期由玩家安装
+    modCompileOnly "maven.modrinth:forge-config-api-port:${fcap_version}"
+}
+
+loom {
+    runs {
+        client {
+            client()
+        }
+    }
+}
+
+processResources {
+    inputs.property 'version', mod_version
+    filesMatching('fabric.mod.json') {
+        expand 'version': mod_version
+    }
+}

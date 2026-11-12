@@ -1,0 +1,30 @@
+plugins {
+    id 'net.minecraftforge.gradle'
+}
+
+// 屏幕核心与两个加载器共用同一份源码，各自编译各自的 jar
+sourceSets.main.java.srcDirs += ['../common/src/main/java']
+sourceSets.main.resources.srcDirs += ['../common/src/main/resources']
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+}
+
+jar {
+    finalizedBy 'reobfJar'
+}
