@@ -3,6 +3,7 @@
   "id": "neoconfigurationscreenport",
   "version": "${version}",
   "name": "Neo Configuration Screen Port",
+  "icon": "icon.png",
   "description": "Unofficial port of NeoForge's in-game configuration screen to Forge and Fabric.",
   "authors": ["Huziyang520"],
   "license": "MPL-2.0",

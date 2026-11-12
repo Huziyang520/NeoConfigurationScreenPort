@@ -34,7 +34,6 @@ public class OptionsSubScreen extends Screen {
         this.addFooter();
         this.layout.arrangeElements();
         this.layout.visitChildren(child -> child.visitWidgets(this::addRenderableWidget));
-        this.added();
     }
 
     protected void addOptions() {

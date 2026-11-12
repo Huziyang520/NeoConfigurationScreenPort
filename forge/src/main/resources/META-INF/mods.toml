@@ -7,6 +7,7 @@ issueTrackerURL="https://github.com/Huziyang520/NeoConfigurationScreenPort/issue
 modId="neoconfigurationscreenport"
 version="${file.jarVersion}"
 displayName="Neo Configuration Screen Port"
+logoFile="icon.png"
 authors="Huziyang520"
 displayURL="https://github.com/Huziyang520/NeoConfigurationScreenPort"
 description='''[EN] Unofficial port of NeoForge's in-game configuration screen to Forge and Fabric. [CN] 把 NeoForge 的配置界面移植到 Forge 与 Fabric。 Issues: https://github.com/Huziyang520/NeoConfigurationScreenPort/issues'''

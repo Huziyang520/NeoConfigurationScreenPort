@@ -21,6 +21,9 @@ Copyright (c) NeoForged and contributors
 SPDX-License-Identifier: LGPL-2.1-only
 ```
 
+The `neoforge.configuration.uitext.*` translation keys in `assets/neoconfigurationscreenport/lang` are taken from
+NeoForge's own language files and stay under the same license.
+
 The full license text is shipped with every jar as `LICENSE-LGPL-2.1.md`.
 
 ## Forge Config API Port
