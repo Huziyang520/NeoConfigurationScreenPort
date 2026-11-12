@@ -20,6 +20,9 @@ import net.minecraft.client.gui.narration.NarratableEntry;
  * {@code OptionsList} contract instead of the option-instance based 1.20.1 one.
  */
 public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOptionsList.Entry> {
+    private static boolean LOGGED;
+    public static int listY = -1;
+    public static int listH = -1;
     public ConfigOptionsList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
         super(minecraft, width, height, y, itemHeight, 0);
     }
@@ -64,6 +67,12 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height,
                 int mouseX, int mouseY, boolean hovering, float partialTick) {
+            if (index == 0 && !LOGGED) {
+                LOGGED = true;
+                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").info(
+                        "[ConfigScreenPort] row0 render top={} left={} width={} height={} widgets={} listY={} listH={}",
+                        top, left, width, height, this.widgets.size(), listY, listH);
+            }
             int x = left;
             for (final AbstractWidget widget : this.widgets) {
                 widget.setX(x);

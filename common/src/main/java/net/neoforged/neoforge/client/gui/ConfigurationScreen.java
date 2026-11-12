@@ -648,6 +648,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     }
                 }
 
+                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").info(
+                        "[ConfigScreenPort] rebuild entries={} elements={} rows={}", context.entries.size(), elements.size(), list.children().size());
                 if (hasUndoableElements && undoButton == null) {
                     createUndoButton();
                     createResetButton();
@@ -909,22 +911,6 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             setUndoButtonstate(undoManager.canUndo()); // in render()? Really? --- Yes! This is how vanilla does it.
             setResetButtonstate(isAnyNondefault());
             super.render(graphics, p_281550_, p_282878_, p_282465_);
-        }
-
-        @Override
-        protected void addFooter() {
-            if (undoButton != null || resetButton != null) {
-                LinearLayout linearlayout = layout.addToFooter(new LinearLayout(0, 0, LinearLayout.Orientation.HORIZONTAL));
-                if (undoButton != null) {
-                    linearlayout.addChild(undoButton);
-                }
-                if (resetButton != null) {
-                    linearlayout.addChild(resetButton);
-                }
-                linearlayout.addChild(doneButton);
-            } else {
-                layout.addToFooter(doneButton);
-            }
         }
 
         protected void createUndoButton() {

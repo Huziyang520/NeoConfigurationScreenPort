@@ -14,7 +14,6 @@ subprojects {
     }
 
     repositories {
-        // 国内镜像放在官方源之前
         maven { name = 'Aliyun Central'; url = 'https://maven.aliyun.com/repository/central' }
         maven { name = 'Aliyun Public'; url = 'https://maven.aliyun.com/repository/public' }
         mavenCentral()
