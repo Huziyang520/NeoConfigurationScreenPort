@@ -279,10 +279,10 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         int count = 0;
         for (final Type type : ModConfig.Type.values()) {
             boolean headerAdded = false;
-            final List<? extends String> hiddenMods = ConfigScreenPortConfig.HIDDEN_MODS.get();
+            final List<? extends String> hiddenFiles = ConfigScreenPortConfig.HIDDEN_FILES.get();
             for (final ModConfig modConfig : ModConfigs.getConfigSet(type)) {
                 // Forge Config Api Port: replace ModContainer with mod id
-                if (!modConfig.getModId().equals(modId) || hiddenMods.contains(modConfig.getModId())) {
+                if (!modConfig.getModId().equals(modId) || hiddenFiles.contains(modConfig.getFileName())) {
                     continue;
                 }
                 if (!headerAdded) {

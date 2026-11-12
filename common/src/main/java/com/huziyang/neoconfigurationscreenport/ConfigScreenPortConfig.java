@@ -15,7 +15,7 @@ public final class ConfigScreenPortConfig {
     public static final ForgeConfigSpec.IntValue ROW_HEIGHT;
     public static final ForgeConfigSpec.DoubleValue SCROLL_SPEED;
     public static final ForgeConfigSpec.ConfigValue<String> TITLE_SUFFIX;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIDDEN_MODS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIDDEN_FILES;
 
     static {
         final ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -24,7 +24,7 @@ public final class ConfigScreenPortConfig {
         ROW_HEIGHT = builder.comment("Height of a single row.").defineInRange("rowHeight", 24, 20, 48);
         SCROLL_SPEED = builder.comment("Multiplier for mouse wheel scrolling.").defineInRange("scrollSpeed", 1.0, 0.25, 4.0);
         TITLE_SUFFIX = builder.comment("Text appended to the screen title.").define("titleSuffix", "");
-        HIDDEN_MODS = builder.comment("Mod ids whose configs are not listed.").defineList("hiddenMods", List.of(), entry -> entry instanceof String);
+        HIDDEN_FILES = builder.comment("Config file names that are not listed.").defineList("hiddenFiles", List.of(), entry -> entry instanceof String);
         builder.pop();
         CLIENT_SPEC = builder.build();
     }

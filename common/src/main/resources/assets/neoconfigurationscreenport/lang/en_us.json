@@ -7,7 +7,6 @@
   "neoconfigurationscreenport.configuration.screen.rowHeight": "Row height",
   "neoconfigurationscreenport.configuration.screen.scrollSpeed": "Scroll speed",
   "neoconfigurationscreenport.configuration.screen.titleSuffix": "Title suffix",
-  "neoconfigurationscreenport.configuration.screen.hiddenMods": "Hidden mods",
   "neoforge.configuration.uitext.title": "%s Configuration",
   "neoforge.configuration.uitext.type.client": "Client Settings",
   "neoforge.configuration.uitext.type.server": "Server Settings",
@@ -60,5 +59,6 @@
   "neoconfigurationscreenport.configuration.screen.rowHeight.tooltip": "Height of a single row in the list.",
   "neoconfigurationscreenport.configuration.screen.scrollSpeed.tooltip": "Mouse wheel scroll multiplier.",
   "neoconfigurationscreenport.configuration.screen.titleSuffix.tooltip": "Text appended to the screen title.",
-  "neoconfigurationscreenport.configuration.screen.hiddenMods.tooltip": "Mod ids whose configs are not listed."
+  "neoconfigurationscreenport.configuration.screen.hiddenFiles": "Hidden files",
+  "neoconfigurationscreenport.configuration.screen.hiddenFiles.tooltip": "Config file names that are not listed."
 }
