@@ -6,9 +6,7 @@
   "neoconfigurationscreenport.configuration.screen.showTooltips": "显示提示",
   "neoconfigurationscreenport.configuration.screen.rowHeight": "行高",
   "neoconfigurationscreenport.configuration.screen.scrollSpeed": "滚动速度",
-  "neoconfigurationscreenport.configuration.section.titleSuffix": "标题后缀",
   "neoconfigurationscreenport.configuration.screen.titleSuffix": "标题后缀",
-  "neoconfigurationscreenport.configuration.screen.theme": "配色主题",
   "neoconfigurationscreenport.configuration.screen.hiddenMods": "隐藏的模组",
   "neoforge.configuration.uitext.title": "%s配置",
   "neoforge.configuration.uitext.type.client": "客户端设置",
@@ -59,5 +57,11 @@
   "neoconfigurationscreenport.configuration.screen": "界面",
   "neoconfigurationscreenport.configuration.title.server": "%s 服务端配置",
   "neoconfigurationscreenport.configuration.title.common": "%s 通用配置",
-  "neoconfigurationscreenport.configuration.title.startup": "%s 启动时配置"
+  "neoconfigurationscreenport.configuration.title.startup": "%s 启动时配置",
+  "neoconfigurationscreenport.configuration.screen.tooltip": "本模组配置界面的设置。",
+  "neoconfigurationscreenport.configuration.screen.showTooltips.tooltip": "在提示框中显示配置项的注释。",
+  "neoconfigurationscreenport.configuration.screen.rowHeight.tooltip": "列表中每一行的高度。",
+  "neoconfigurationscreenport.configuration.screen.scrollSpeed.tooltip": "滚轮滚动的速度倍率。",
+  "neoconfigurationscreenport.configuration.screen.titleSuffix.tooltip": "追加在配置界面标题后面的文字。",
+  "neoconfigurationscreenport.configuration.screen.hiddenMods.tooltip": "列出的模组 ID 不会出现在配置界面里。"
 }

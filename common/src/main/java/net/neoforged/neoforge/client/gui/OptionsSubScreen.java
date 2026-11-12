@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforge.client.gui;
 
+import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
@@ -49,7 +50,7 @@ public class OptionsSubScreen extends Screen {
         this.undoButton = null;
         this.resetButton = null;
         this.list = new ConfigOptionsList(this.minecraft, this.width, this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
-                HEADER_HEIGHT, 24);
+                HEADER_HEIGHT, ConfigScreenPortConfig.ROW_HEIGHT.get());
         this.addRenderableWidget(this.list);
         this.addOptions();
         this.createFooter();
@@ -88,6 +89,12 @@ public class OptionsSubScreen extends Screen {
         this.place(this.doneButton, x, y);
     }
 
+    @Override
+    public Component getTitle() {
+        final String suffix = ConfigScreenPortConfig.TITLE_SUFFIX.get();
+        return suffix.isBlank() ? this.title : this.title.copy().append(suffix);
+    }
+
     private void place(final AbstractWidget widget, final int x, final int y) {
         widget.setX(x);
         widget.setY(y);
@@ -103,14 +110,14 @@ public class OptionsSubScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (!this.loggedOnce) {
             this.loggedOnce = true;
-            LOGGER.info("[ConfigScreenPort] first render {}, rows={} rowWidth={}", this.title.getString(),
+            LOGGER.info("[ConfigScreenPort] first render {}, rows={} rowWidth={}", this.getTitle().getString(),
                     this.list == null ? -1 : this.list.children().size(),
                     this.list == null ? -1 : this.list.getRowWidth());
         }
         // 1.20.1 screens draw their own backdrop; without it the parent screen shows through.
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.getTitle(), this.width / 2, 12, 0xFFFFFF);
     }
 
     @Override

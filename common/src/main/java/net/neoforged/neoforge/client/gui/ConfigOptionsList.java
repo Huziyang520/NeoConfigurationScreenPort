@@ -8,9 +8,12 @@ package net.neoforged.neoforge.client.gui;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
+import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -53,6 +56,12 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
         return this.width / 2 + 155;
     }
 
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        final double speed = ConfigScreenPortConfig.SCROLL_SPEED.get();
+        return super.mouseScrolled(mouseX, mouseY, speed == 1.0D ? delta : delta * speed);
+    }
+
     public static class Entry extends ContainerObjectSelectionList.Entry<Entry> {
         private final List<AbstractWidget> widgets = new ArrayList<>();
         private final List<NarratableEntry> narratables = new ArrayList<>();
@@ -78,10 +87,18 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
             }
             int x = left;
             for (final AbstractWidget widget : this.widgets) {
-                widget.setX(x);
+                // 1.20.1's EditBox paints its frame one pixel outside its bounds, so inset it to match a button.
+                final boolean bordered = widget instanceof EditBox;
+                final int slot = bordered ? Button.DEFAULT_WIDTH : widget.getWidth();
+                if (bordered) {
+                    widget.setX(x + 1);
+                    widget.setWidth(slot - 2);
+                } else {
+                    widget.setX(x);
+                }
                 widget.setY(top);
                 widget.render(graphics, mouseX, mouseY, partialTick);
-                x += widget.getWidth() + 8;
+                x += slot + 8;
             }
         }
 

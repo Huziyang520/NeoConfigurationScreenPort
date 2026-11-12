@@ -11,6 +11,7 @@ import com.electronwill.nightconfig.core.UnmodifiableConfig.Entry;
 import com.google.common.collect.ImmutableList;
 import com.mojang.realmsclient.RealmsMainScreen;
 import com.mojang.serialization.Codec;
+import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import com.huziyang.neoconfigurationscreenport.internal.ModLists;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import java.util.ArrayList;
@@ -278,35 +279,39 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         int count = 0;
         for (final Type type : ModConfig.Type.values()) {
             boolean headerAdded = false;
+            final List<? extends String> hiddenMods = ConfigScreenPortConfig.HIDDEN_MODS.get();
             for (final ModConfig modConfig : ModConfigs.getConfigSet(type)) {
                 // Forge Config Api Port: replace ModContainer with mod id
-                if (modConfig.getModId().equals(modId)) {
-                    if (!headerAdded) {
-                        list.addSmall(new StringWidget(BIG_BUTTON_WIDTH, Button.DEFAULT_HEIGHT,
-                                Component.translatable(LANG_PREFIX + type.name().toLowerCase(Locale.ENGLISH)).withStyle(ChatFormatting.UNDERLINE), font).alignLeft(), null);
-                        headerAdded = true;
-                    }
-                    btn = Button.builder(Component.translatable(SECTION, translatableConfig(modConfig, "", LANG_PREFIX + "type." + modConfig.getType().name().toLowerCase(Locale.ROOT))),
-                            button -> minecraft.setScreen(sectionScreen.apply(this, type, modConfig, translatableConfig(modConfig, ".title", LANG_PREFIX + "title." + type.name().toLowerCase(Locale.ROOT))))).width(BIG_BUTTON_WIDTH).build();
-                    MutableComponent tooltip = Component.empty();
-                    if (!((ForgeConfigSpec) modConfig.getSpec()).isLoaded()) {
-                        tooltip.append(TOOLTIP_CANNOT_EDIT_NOT_LOADED).append(Component.literal("\n\n"));
-                        btn.active = false;
-                        count = 99; // prevent autoClose
-                    } else if (type == Type.SERVER && minecraft.getCurrentServer() != null && !minecraft.isSingleplayer()) {
-                        tooltip.append(TOOLTIP_CANNOT_EDIT_THIS_WHILE_ONLINE).append(Component.literal("\n\n"));
-                        btn.active = false;
-                        count = 99; // prevent autoClose
-                    } else if (type == Type.SERVER && minecraft.hasSingleplayerServer() && minecraft.getSingleplayerServer().isPublished()) {
-                        tooltip.append(TOOLTIP_CANNOT_EDIT_THIS_WHILE_OPEN_TO_LAN).append(Component.literal("\n\n"));
-                        btn.active = false;
-                        count = 99; // prevent autoClose
-                    }
-                    tooltip.append(Component.translatable(FILENAME_TOOLTIP, modConfig.getFileName()));
-                    btn.setTooltip(Tooltip.create(tooltip));
-                    list.addSmall(btn, null);
-                    count++;
+                if (!modConfig.getModId().equals(modId) || hiddenMods.contains(modConfig.getModId())) {
+                    continue;
                 }
+                if (!headerAdded) {
+                    list.addSmall(new StringWidget(BIG_BUTTON_WIDTH, Button.DEFAULT_HEIGHT,
+                            Component.translatable(LANG_PREFIX + type.name().toLowerCase(Locale.ENGLISH)).withStyle(ChatFormatting.UNDERLINE), font).alignLeft(), null);
+                    headerAdded = true;
+                }
+                btn = Button.builder(Component.translatable(SECTION, translatableConfig(modConfig, "", LANG_PREFIX + "type." + modConfig.getType().name().toLowerCase(Locale.ROOT))),
+                        button -> minecraft.setScreen(sectionScreen.apply(this, type, modConfig, translatableConfig(modConfig, ".title", LANG_PREFIX + "title." + type.name().toLowerCase(Locale.ROOT))))).width(BIG_BUTTON_WIDTH).build();
+                MutableComponent tooltip = Component.empty();
+                if (!((ForgeConfigSpec) modConfig.getSpec()).isLoaded()) {
+                    tooltip.append(TOOLTIP_CANNOT_EDIT_NOT_LOADED).append(Component.literal("\n\n"));
+                    btn.active = false;
+                    count = 99; // prevent autoClose
+                } else if (type == Type.SERVER && minecraft.getCurrentServer() != null && !minecraft.isSingleplayer()) {
+                    tooltip.append(TOOLTIP_CANNOT_EDIT_THIS_WHILE_ONLINE).append(Component.literal("\n\n"));
+                    btn.active = false;
+                    count = 99; // prevent autoClose
+                } else if (type == Type.SERVER && minecraft.hasSingleplayerServer() && minecraft.getSingleplayerServer().isPublished()) {
+                    tooltip.append(TOOLTIP_CANNOT_EDIT_THIS_WHILE_OPEN_TO_LAN).append(Component.literal("\n\n"));
+                    btn.active = false;
+                    count = 99; // prevent autoClose
+                }
+                tooltip.append(Component.translatable(FILENAME_TOOLTIP, modConfig.getFileName()));
+                if (ConfigScreenPortConfig.SHOW_TOOLTIPS.get()) {
+                    btn.setTooltip(Tooltip.create(tooltip));
+                }
+                list.addSmall(btn, null);
+                count++;
             }
         }
         if (count == 1) {
@@ -587,6 +592,17 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             return spec != null && List.class.isAssignableFrom(spec.getClazz());
         }
 
+        /** Every tooltip in this screen can be switched off through the port's own config. */
+        protected static boolean tooltipsEnabled() {
+            return ConfigScreenPortConfig.SHOW_TOOLTIPS.get();
+        }
+
+        protected void applyTooltip(final AbstractWidget widget, @Nullable final Component tooltip) {
+            if (tooltipsEnabled() && tooltip != null) {
+                widget.setTooltip(Tooltip.create(tooltip));
+            }
+        }
+
         protected String getComment(final String key) {
             final ValueSpec valueSpec = getValueSpec(key);
             return valueSpec != null ? getValueSpec(key).getComment() : context.modSpec.getLevelComment(context.makeKeyList(key));
@@ -681,7 +697,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                             list.addSmall(new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.empty(), font), element.getWidget(options));
                         } else {
                             final StringWidget label = new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, element.name, font).alignLeft();
-                            label.setTooltip(Tooltip.create(element.tooltip));
+                            applyTooltip(label, element.tooltip);
                             list.addSmall(label, element.getWidget(options));
                         }
                         hasUndoableElements |= element.undoable;
@@ -726,13 +742,13 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             if (source.get().length() > 192) {
                 // That's just too much for the UI
                 final StringWidget label = new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.literal(source.get().substring(0, 128)), font).alignLeft();
-                label.setTooltip(Tooltip.create(LONG_STRING));
+                applyTooltip(label, LONG_STRING);
                 return new Element(getTranslationComponent(key), getTooltipComponent(key, null), label, false);
             }
             final EditBox box = new EditBox(font, 0, 0, Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, getTranslationComponent(key));
             box.setEditable(true);
             // no filter or the user wouldn't be able to type
-            box.setTooltip(Tooltip.create(getTooltipComponent(key, null)));
+            applyTooltip(box, getTooltipComponent(key, null));
             box.setMaxLength(Mth.clamp(source.get().length() + 5, 128, 192));
             box.setValue(source.get());
             box.setResponder(newValue -> {
@@ -780,7 +796,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createOtherValue(final String key, final ConfigValue<?> value) {
             final StringWidget label = new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.literal(Objects.toString(value.get())), font).alignLeft();
-            label.setTooltip(Tooltip.create(UNSUPPORTED_ELEMENT));
+            applyTooltip(label, UNSUPPORTED_ELEMENT);
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null), label, false);
         }
 
@@ -801,7 +817,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                             onChanged(key);
                         }, current);
                     });
-            button.setTooltip(Tooltip.create(getTooltipComponent(key, null)));
+            applyTooltip(button, getTooltipComponent(key, null));
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null), button, true);
         }
 
@@ -838,7 +854,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createSlider(final String key, final Supplier<Integer> source, final Consumer<Integer> target, final @Nullable Range<Integer> range) {
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null),
-                    new OptionInstance<>(getTranslationKey(key), getTooltip(key, range),
+                    new OptionInstance<>(getTranslationKey(key), tooltipsEnabled() ? getTooltip(key, range) : OptionInstance.noTooltip(),
                             (caption, displayvalue) -> Component.literal("" + displayvalue), new OptionInstance.IntRange(range != null ? range.getMin() : 0, range != null ? range.getMax() : Integer.MAX_VALUE),
                             null, source.get(), newValue -> {
                         if (!newValue.equals(source.get())) {
@@ -874,7 +890,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     return isPartialNumber(newValueString, (range == null || range.getMin().compareTo(zero) < 0));
                 }
             });
-            box.setTooltip(Tooltip.create(getTooltipComponent(key, range)));
+            applyTooltip(box, getTooltipComponent(key, range));
             box.setValue(source.get() + "");
             box.setResponder(newValueString -> {
                 try {
@@ -925,24 +941,24 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createSection(final String key, final UnmodifiableConfig subconfig, final UnmodifiableConfig subsection) {
             if (subconfig.isEmpty()) return null;
-            return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null),
-                    Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
-                                    button -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
-                                            k -> new ConfigurationSectionScreen(context, this, subconfig.valueMap(), key, subsection.entrySet(), getTranslationComponent(key)).rebuild())))
-                            .tooltip(Tooltip.create(getTooltipComponent(key, null)))
-                            .width(Button.DEFAULT_WIDTH)
-                            .build(),
-                    false);
+            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
+                    pressed -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
+                            k -> new ConfigurationSectionScreen(context, this, subconfig.valueMap(), key, subsection.entrySet(), getTranslationComponent(key)).rebuild())))
+                    .width(Button.DEFAULT_WIDTH)
+                    .build();
+            applyTooltip(button, getTooltipComponent(key, null));
+            return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null), button, false);
         }
 
         @Nullable
         protected <T> Element createList(final String key, final ValueSpec spec, final ForgeConfigSpec.ConfigValue<List<T>> list) {
-            return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null),
-                    Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
-                                    button -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
-                                            k -> new ConfigurationListScreen<>(Context.list(context, this), key, Component.translatable(CRUMB, this.getTitle(), CRUMB_SEPARATOR, getTranslationComponent(key)), spec, list)).rebuild()))
-                            .tooltip(Tooltip.create(getTooltipComponent(key, null))).build(),
-                    false);
+            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
+                    pressed -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
+                            k -> new ConfigurationListScreen<>(Context.list(context, this), key, Component.translatable(CRUMB, this.getTitle(), CRUMB_SEPARATOR, getTranslationComponent(key)), spec, list)).rebuild()))
+                    .width(Button.DEFAULT_WIDTH)
+                    .build();
+            applyTooltip(button, getTooltipComponent(key, null));
+            return new Element(Component.translatable(SECTION, getTranslationComponent(key)), getTooltipComponent(key, null), button, false);
         }
 
         @Override
@@ -1166,7 +1182,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createOtherValue(final int idx, final T entry) {
             final StringWidget label = new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.literal(Objects.toString(entry)), font).alignLeft();
-            label.setTooltip(Tooltip.create(UNSUPPORTED_ELEMENT));
+            applyTooltip(label, UNSUPPORTED_ELEMENT);
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null), label, false);
         }
 
