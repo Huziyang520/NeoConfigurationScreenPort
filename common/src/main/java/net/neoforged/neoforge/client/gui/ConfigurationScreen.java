@@ -244,6 +244,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
     // If there is only one config type (and it can be edited, we show that instantly on the way "down" and want to close on the way "up".
     // But when returning from the restart/reload confirmation screens, we need to stay open.
     private boolean autoClose = false;
+    // 1.20.1 calls added() before init(), so a screen that closed itself in added() must not rebuild or forward again.
+    private boolean bypassed = false;
 
     // Forge Config Api Port: replace ModContainer with mod id
     public ConfigurationScreen(final String modId, final Screen parent) {
@@ -314,10 +316,20 @@ public final class ConfigurationScreen extends OptionsSubScreen {
     }
 
     @Override
+    protected void init() {
+        // The screen already closed itself on the way back; rebuilding would reopen the section.
+        if (this.bypassed) {
+            return;
+        }
+        super.init();
+    }
+
+    @Override
     public void added() {
         super.added();
         if (autoClose) {
             autoClose = false;
+            bypassed = true;
             onClose();
         }
     }
@@ -451,7 +463,11 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             }
 
             public AbstractWidget getWidget(final Options options) {
-                return widget;
+                // Neo keeps the option instead of a widget for sliders; build the button on demand.
+                if (this.widget != null) {
+                    return this.widget;
+                }
+                return this.option != null ? this.option.createButton(options, 0, 0, Button.DEFAULT_WIDTH) : null;
             }
 
             @Nullable
@@ -474,8 +490,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         protected boolean changed = false;
         protected RestartType needsRestart = RestartType.NONE;
         protected final Map<String, ConfigurationSectionScreen> sectionCache = new HashMap<>();
-        @Nullable
-        protected Button undoButton, resetButton; // must not be changed after creation unless the reference inside the layout also is replaced
+        // Neo Configuration Screen Port: undo/reset buttons live in OptionsSubScreen, shadowing them hid the footer buttons
         protected final UndoManager undoManager = new UndoManager();
 
         /**
@@ -536,9 +551,17 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         }
 
         protected String getTranslationKey(final String key) {
+            final List<String> path = context.makeKeyList(key);
+            // The level key carries the full path; a ValueSpec built without an explicit key has none.
+            final String levelKey = context.modSpec.getLevelTranslationKey(path);
+            if (levelKey != null) {
+                return levelKey;
+            }
             final ValueSpec valueSpec = getValueSpec(key);
-            final String result = valueSpec != null ? valueSpec.getTranslationKey() : context.modSpec.getLevelTranslationKey(context.makeKeyList(key));
-            return result != null ? result : context.modId + ".configuration." + key;
+            if (valueSpec != null && valueSpec.getTranslationKey() != null) {
+                return valueSpec.getTranslationKey();
+            }
+            return context.modId + ".configuration." + String.join(".", path);
         }
 
         protected MutableComponent getTranslationComponent(final String key) {
@@ -673,10 +696,9 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         protected boolean isAnyNondefault() {
             for (final Entry entry : context.entries) {
-                if (entry.getRawValue() instanceof final ForgeConfigSpec.ConfigValue<?> cv) {
-                    if (!(getValueSpec(entry.getKey()) instanceof ValueSpec) && isNonDefault(cv)) {
-                        return true;
-                    }
+                if (entry.getRawValue() instanceof final ForgeConfigSpec.ConfigValue<?> cv
+                        && !isListSpec(getValueSpec(entry.getKey())) && isNonDefault(cv)) {
+                    return true;
                 }
             }
             return false;
@@ -934,10 +956,13 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 for (final Entry entry : context.entries) {
                     if (entry.getRawValue() instanceof final ForgeConfigSpec.ConfigValue cv && !isListSpec(getValueSpec(entry.getKey())) && isNonDefault(cv)) {
                         final String key = entry.getKey();
+                        final ValueSpec valueSpec = getValueSpec(key);
+                        // Neo Configuration Screen Port: a value without a ValueSpec falls back to its own default
+                        final Object resetValue = valueSpec != null ? valueSpec.correct(null) : cv.getDefault();
                         list.add(undoManager.step(v -> {
                             cv.set(v);
                             onChanged(key);
-                        }, getValueSpec(key).correct(null), v -> {
+                        }, resetValue, v -> {
                             cv.set(v);
                             onChanged(key);
                         }, cv.get()));
@@ -1059,6 +1084,11 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             return !cfgList.equals(valueList.getDefault());
         }
 
+        // Neo Configuration Screen Port: 1.20.1 can lose the ValueSpec of a list, so validity is optional
+        protected boolean isValidList(final List<?> values) {
+            return spec == null || spec.test(values);
+        }
+
         /**
          * Creates a button to add a new element to the end of the list and adds it to the UI.<p>
          *
@@ -1126,25 +1156,25 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @SuppressWarnings("unchecked")
         @Nullable
         protected Element createStringListValue(final int idx, final String value) {
-            return createStringValue(key, v -> spec.test(List.of(v)), () -> value, newValue -> cfgList.set(idx, (T) newValue));
+            return createStringValue(key, v -> isValidList(List.of(v)), () -> value, newValue -> cfgList.set(idx, (T) newValue));
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         protected Element createDoubleListValue(final int idx, final Double value) {
-            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> spec.test(List.of(v)), Double::parseDouble, 0.0);
+            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> isValidList(List.of(v)), Double::parseDouble, 0.0);
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         protected Element createLongListValue(final int idx, final Long value) {
-            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> spec.test(List.of(v)), Long::decode, 0L);
+            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> isValidList(List.of(v)), Long::decode, 0L);
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         protected Element createIntegerListValue(final int idx, final Integer value) {
-            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> spec.test(List.of(v)), Integer::decode, 0);
+            return createNumberBox(key, spec, () -> value, newValue -> cfgList.set(idx, (T) newValue), v -> isValidList(List.of(v)), Integer::decode, 0);
         }
 
         @SuppressWarnings("unchecked")
@@ -1172,7 +1202,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         }
 
         private boolean addUndoListener(boolean simulate, List<T> values) {
-            final boolean valid = spec.test(values);
+            final boolean valid = isValidList(values);
             if (!simulate && valid) {
                 undoManager.add(v -> {
                     cfgList = v;
@@ -1188,7 +1218,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         @Override
         public void onClose() {
-            if (changed && spec.test(cfgList)) {
+            if (changed && isValidList(cfgList)) {
                 valueList.set(cfgList);
                 if (context.parent instanceof ConfigurationSectionScreen parent) {
                     parent.onChanged(key);
@@ -1199,7 +1229,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         @Override
         public void render(GuiGraphics graphics, int p_281550_, int p_282878_, float p_282465_) {
-            doneButton.active = spec.test(cfgList);
+            doneButton.active = isValidList(cfgList);
             super.render(graphics, p_281550_, p_282878_, p_282465_);
         }
 
@@ -1212,11 +1242,14 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @SuppressWarnings("unchecked")
         protected void createResetButton() {
             resetButton = Button.builder(RESET, button -> {
+                final ValueSpec valueSpec = getValueSpec(key);
+                // Neo Configuration Screen Port: no ValueSpec means the entry default is the only reset target
+                final Object resetValue = valueSpec != null ? valueSpec.correct(null) : valueList.getDefault();
                 undoManager.add(
                         v -> {
                             cfgList = v;
                             onChanged(key);
-                        }, new ArrayList<>((List<T>) getValueSpec(key).correct(null)),
+                        }, new ArrayList<>((List<T>) resetValue),
                         v -> {
                             cfgList = v;
                             onChanged(key);

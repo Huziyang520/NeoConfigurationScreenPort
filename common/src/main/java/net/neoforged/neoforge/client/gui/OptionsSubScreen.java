@@ -37,10 +37,12 @@ public class OptionsSubScreen extends Screen {
 
     @Override
     protected void init() {
+        // 1.20.1 keeps renderables across init() calls, so a resize would stack a second list on top.
+        this.clearWidgets();
+        this.doneButton = null;
+        this.undoButton = null;
+        this.resetButton = null;
         this.list = new ConfigOptionsList(this.minecraft, this.width, this.height - 32 - 36, 32, 24);
-        ConfigOptionsList.listY = 32;
-        ConfigOptionsList.listH = this.height - 32 - 36;
-        this.list.setRenderBackground(false);
         this.addRenderableWidget(this.list);
         this.addOptions();
         this.createFooter();
@@ -51,15 +53,17 @@ public class OptionsSubScreen extends Screen {
     protected void createFooter() {
         if (this.doneButton == null) {
             this.doneButton = Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
-                    .width(Button.SMALL_WIDTH).build();
+                    .width(Button.DEFAULT_WIDTH).build();
         }
         final int y = this.height - 28;
         this.place(this.doneButton, this.width / 2 + 4, y);
-        if (this.undoButton != null) {
-            this.place(this.undoButton, this.width / 2 - 4 - this.undoButton.getWidth() - 4 - this.undoButton.getWidth(), y);
-        }
+        int right = this.width / 2 - 4;
         if (this.resetButton != null) {
-            this.place(this.resetButton, this.width / 2 - 4 - this.resetButton.getWidth(), y);
+            this.place(this.resetButton, right - this.resetButton.getWidth(), y);
+            right -= this.resetButton.getWidth() + 4;
+        }
+        if (this.undoButton != null) {
+            this.place(this.undoButton, right - this.undoButton.getWidth(), y);
         }
     }
 
@@ -82,6 +86,8 @@ public class OptionsSubScreen extends Screen {
                     this.list == null ? -1 : this.list.children().size(),
                     this.list == null ? -1 : this.list.getRowWidth());
         }
+        // 1.20.1 screens draw their own backdrop; without it the parent screen shows through.
+        this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
     }

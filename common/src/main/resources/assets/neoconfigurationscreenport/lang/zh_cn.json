@@ -26,6 +26,7 @@
   "neoforge.configuration.uitext.longstring": "该值太长，无法在UI中编辑。请在配置文件中编辑它。",
   "neoforge.configuration.uitext.section": "%s…",
   "neoforge.configuration.uitext.sectiontext": "编辑",
+  "neoforge.configuration.uitext.breadcrumb": "%s > %s",
   "neoforge.configuration.uitext.breadcrumb.order": "%1$s %2$s %3$s",
   "neoforge.configuration.uitext.breadcrumb.separator": ">",
   "neoforge.configuration.uitext.listelement": "%s:",

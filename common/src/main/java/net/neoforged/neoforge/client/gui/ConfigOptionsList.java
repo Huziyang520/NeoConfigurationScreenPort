@@ -21,10 +21,13 @@ import net.minecraft.client.gui.narration.NarratableEntry;
  */
 public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOptionsList.Entry> {
     private static boolean LOGGED;
-    public static int listY = -1;
-    public static int listH = -1;
+
+    /**
+     * The 1.20.1 list takes {@code (minecraft, width, height, y0, y1, itemHeight)}: y1 is passed
+     * verbatim (it drives the visible window) and itemHeight is the last argument.
+     */
     public ConfigOptionsList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
-        super(minecraft, width, height, y, itemHeight, 0);
+        super(minecraft, width, height, y, y + height, itemHeight);
     }
 
     public void addSmall(@Nullable AbstractWidget first, @Nullable AbstractWidget second) {
@@ -70,8 +73,8 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
             if (index == 0 && !LOGGED) {
                 LOGGED = true;
                 org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").info(
-                        "[ConfigScreenPort] row0 render top={} left={} width={} height={} widgets={} listY={} listH={}",
-                        top, left, width, height, this.widgets.size(), listY, listH);
+                        "[ConfigScreenPort] row0 render top={} left={} width={} height={} widgets={}",
+                        top, left, width, height, this.widgets.size());
             }
             int x = left;
             for (final AbstractWidget widget : this.widgets) {
