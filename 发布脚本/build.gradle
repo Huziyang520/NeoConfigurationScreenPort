@@ -328,3 +328,33 @@ tasks.register('ghShow') {
         release.assets.each { println "  ${it.name} (${it.size} bytes) state=${it.state}" }
     }
 }
+
+tasks.register('cfVersions') {
+    description = 'Prints the names and types of the game version ids used by the last upload (read-only).'
+    doLast {
+        if (cfKey == null) {
+            throw new GradleException('curseforge_api_key is not set in the user level gradle.properties')
+        }
+        def ids = ((findProperty('ids') ?: '9990,7498,9638').toString()).split(',')*.trim()*.toInteger()
+        def client = httpClient()
+        def apiBase = 'https://minecraft.curseforge.com'
+        def types = [:]
+        def tResp = client.send(
+                HttpRequest.newBuilder(URI.create("${apiBase}/api/game/version-types"))
+                        .header('X-Api-Token', cfKey.toString()).timeout(Duration.ofSeconds(60)).GET().build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+        if (tResp.statusCode() == 200) {
+            new groovy.json.JsonSlurper().parseText(tResp.body()).each { types[it.id] = it.name?.toString() }
+        }
+        def vResp = client.send(
+                HttpRequest.newBuilder(URI.create("${apiBase}/api/game/versions"))
+                        .header('X-Api-Token', cfKey.toString()).timeout(Duration.ofSeconds(60)).GET().build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+        if (vResp.statusCode() != 200) {
+            throw new GradleException("GET /api/game/versions failed: ${vResp.statusCode()}")
+        }
+        new groovy.json.JsonSlurper().parseText(vResp.body()).findAll { ids.contains(it.id as int) }.each {
+            println "${it.id} -> ${it.name} (type ${types[it.gameVersionTypeID] ?: '?'})"
+        }
+    }
+}
