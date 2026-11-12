@@ -476,7 +476,6 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         protected final Map<String, ConfigurationSectionScreen> sectionCache = new HashMap<>();
         @Nullable
         protected Button undoButton, resetButton; // must not be changed after creation unless the reference inside the layout also is replaced
-        protected final Button doneButton = Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(Button.SMALL_WIDTH).build();
         protected final UndoManager undoManager = new UndoManager();
 
         /**
@@ -604,39 +603,32 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     final Object rawValue = entry.getRawValue();
                     // Neo Configuration Screen Port: pattern switch -> if/else chain (1.20.1 runs on Java 17)
                     if (rawValue instanceof ConfigValue cv) {
-                        final ValueSpec valueSpec = getValueSpec(key);
-                        Element element = null;
-                        if (valueSpec != null) {
-                            if (isListSpec(valueSpec)) {
-                                element = createList(key, valueSpec, cv);
-                            } else if (cv.getClass() == ConfigValue.class && valueSpec.getDefault() instanceof String) {
-                                element = createStringValue(key, valueSpec::test, () -> (String) cv.get(), cv::set);
-                            } else if (cv.getClass() == ConfigValue.class && valueSpec.getDefault() instanceof Integer) {
-                                element = createIntegerValue(key, valueSpec, () -> (Integer) cv.get(), cv::set);
-                            } else if (cv.getClass() == ConfigValue.class && valueSpec.getDefault() instanceof Long) {
-                                element = createLongValue(key, valueSpec, () -> (Long) cv.get(), cv::set);
-                            } else if (cv.getClass() == ConfigValue.class && valueSpec.getDefault() instanceof Double) {
-                                element = createDoubleValue(key, valueSpec, () -> (Double) cv.get(), cv::set);
-                            } else if (cv.getClass() == ConfigValue.class && valueSpec.getDefault() instanceof Enum<?>) {
-                                element = createEnumValue(key, valueSpec, (Supplier) cv::get, (Consumer) cv::set);
-                            } else if (cv instanceof ForgeConfigSpec.BooleanValue value) {
-                                element = createBooleanValue(key, valueSpec, value::get, value::set);
-                            } else if (cv instanceof ForgeConfigSpec.IntValue value) {
-                                element = createIntegerValue(key, valueSpec, value::get, value::set);
-                            } else if (cv instanceof ForgeConfigSpec.LongValue value) {
-                                element = createLongValue(key, valueSpec, value::get, value::set);
-                            } else if (cv instanceof ForgeConfigSpec.DoubleValue value) {
-                                element = createDoubleValue(key, valueSpec, value::get, value::set);
-                            } else if (cv instanceof ForgeConfigSpec.EnumValue value) {
-                                element = createEnumValue(key, valueSpec, (Supplier) value::get, (Consumer) value::set);
-                            } else {
-                                element = createOtherValue(key, cv);
-                            }
+                        // Neo Configuration Screen Port: Forge keeps no ValueSpec per entry, so the value type comes from the default
+                        final Object defaultValue = cv.getDefault();
+                        Element element;
+                        if (defaultValue instanceof Boolean) {
+                            element = createBooleanValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof Integer) {
+                            element = createIntegerValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof Long) {
+                            element = createLongValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof Double) {
+                            element = createDoubleValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof String) {
+                            element = createStringValue(key, value -> true, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof Enum<?>) {
+                            element = createEnumValue(key, null, (Supplier) cv::get, (Consumer) cv::set);
+                        } else if (defaultValue instanceof java.util.List<?>) {
+                            element = createList(key, null, cv);
+                        } else {
+                            element = createOtherValue(key, cv);
                         }
                         elements.add(context.filter.filterEntry(context, key, element));
                     } else if (rawValue instanceof UnmodifiableConfig subsection
                             && context.valueSpecs.get(key) instanceof UnmodifiableConfig subconfig) {
                         elements.add(createSection(key, subconfig, subsection));
+                    } else if (rawValue instanceof UnmodifiableConfig subsection) {
+                        elements.add(createSection(key, subsection, subsection));
                     } else {
                         elements.add(context.filter.filterEntry(context, key, createOtherSection(key, rawValue)));
                     }
@@ -781,17 +773,17 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected <T extends Enum<T>> Element createEnumValue(final String key, final ValueSpec spec, final Supplier<T> source, final Consumer<T> target) {
             @SuppressWarnings("unchecked")
-            final Class<T> clazz = (Class<T>) spec.getClazz();
+            final Class<T> clazz = (Class<T>) source.get().getClass();
             assert clazz != null;
 
-            final List<T> list = Arrays.stream(clazz.getEnumConstants()).filter(spec::test).toList();
+            final List<T> list = Arrays.stream(clazz.getEnumConstants()).filter(value -> spec == null || spec.test(value)).toList();
 
             return createCycleValue(key, list, source.get(), value -> Component.literal(value.name()), target);
         }
 
         @Nullable
         protected Element createIntegerValue(final String key, final ValueSpec spec, final Supplier<Integer> source, final Consumer<Integer> target) {
-            final Range<Integer> range = spec.getRange();
+            final Range<Integer> range = spec != null ? spec.getRange() : null;
             final int min = range != null ? range.getMin() : 0;
             final int max = range != null ? range.getMax() : Integer.MAX_VALUE;
 
@@ -829,7 +821,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected <T extends Number & Comparable<? super T>> Element createNumberBox(final String key, final ValueSpec spec, final Supplier<T> source,
                                                                                      final Consumer<T> target, @Nullable final Predicate<T> tester, final Function<String, T> parser, final T zero) {
-            final Range<T> range = spec.getRange();
+            final Range<T> range = spec != null ? spec.getRange() : null;
 
             final EditBox box = new EditBox(font, 0, 0, Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, getTranslationComponent(key));
             box.setEditable(true);
@@ -846,7 +838,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             box.setResponder(newValueString -> {
                 try {
                     final T newValue = parser.apply(newValueString);
-                    if (tester != null ? tester.test(newValue) : (newValue != null && (range == null || range.test(newValue)) && spec.test(newValue))) {
+                    if (tester != null ? tester.test(newValue) : (newValue != null && (range == null || range.test(newValue)) && (spec == null || spec.test(newValue)))) {
                         if (!newValue.equals(source.get())) {
                             undoManager.add(v -> {
                                 target.accept(v);

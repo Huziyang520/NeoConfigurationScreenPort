@@ -6,8 +6,11 @@
 package net.neoforged.neoforge.client.gui;
 
 import net.minecraft.client.Options;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -18,6 +21,8 @@ public class OptionsSubScreen extends Screen {
     protected final Screen lastScreen;
     protected final Options options;
     protected final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
+    protected final Button doneButton = Button.builder(CommonComponents.GUI_DONE, button -> onClose())
+            .width(Button.SMALL_WIDTH).build();
     protected ConfigOptionsList list;
 
     protected OptionsSubScreen(Screen lastScreen, Options options, Component title) {
@@ -28,8 +33,9 @@ public class OptionsSubScreen extends Screen {
 
     @Override
     protected void init() {
-        this.list = new ConfigOptionsList(this.minecraft, this.width, this.height, 32, 24);
+        this.list = new ConfigOptionsList(this.minecraft, this.width, this.height - 32 - 40, 32, 24);
         this.addRenderableWidget(this.list);
+        this.layout.addToHeader(new StringWidget(this.title, this.font));
         this.addOptions();
         this.addFooter();
         this.layout.arrangeElements();
@@ -40,8 +46,13 @@ public class OptionsSubScreen extends Screen {
     }
 
     protected void addFooter() {
+        this.layout.addToFooter(this.doneButton);
     }
 
-    public void added() {
+    @Override
+    public void onClose() {
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(this.lastScreen);
+        }
     }
 }
