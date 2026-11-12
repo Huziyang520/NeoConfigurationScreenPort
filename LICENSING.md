@@ -11,8 +11,10 @@ modified parts stay distinguishable.
 
 ## NeoForge
 
-Classes derived from NeoForge's `net.neoforged.neoforge.client.gui.ConfigurationScreen` remain under the GNU Lesser
-General Public License v2.1 only, as declared by their original header:
+`net/neoforged/neoforge/client/gui/ConfigurationScreen.java` is derived from NeoForge 1.21.1, using Forge Config API
+Port's environment-neutral adaptation as the starting point. Changes made here are marked with
+`// Neo Configuration Screen Port: ...`. The file remains under the GNU Lesser General Public License v2.1 only, as
+declared by its original header:
 
 ```
 Copyright (c) NeoForged and contributors
