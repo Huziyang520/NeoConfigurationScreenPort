@@ -13,7 +13,7 @@ the same widgets, tooltips, undo and reset.
 
 The screen is a port of [NeoForge](https://github.com/neoforged/NeoForge)'s implementation, so it
 keeps NeoForge's package names and entry points; on Fabric the config data comes from
-[Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport). Mods that already register a
+[Forge Config API Port](https://github.com/Fuzss/forge-config-api-port). Mods that already register a
 NeoForge configuration screen work here unchanged; mods written for other loaders only need to
 register the screen once.
 
@@ -53,7 +53,7 @@ falls back to the comment written in the config spec.
 - **[The NeoForged team and contributors](https://github.com/neoforged/NeoForge)** — for NeoForge's
   configuration screen, which this project ports, and for the API shape it keeps.
 - **[Fuzss](https://github.com/Fuzss)** — for
-  [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport), the config API that makes the
+  [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port), the config API that makes the
   same screen possible on Fabric.
 
 ## ⚖️ License
@@ -77,7 +77,7 @@ bundled in the jar as `LICENSE` and `LICENSE-LGPL-2.1.md`.
 提示框以及撤销与重置，让模组的设置在哪里打开都是同一个样子。
 
 界面是对 [NeoForge](https://github.com/neoforged/NeoForge) 实现的移植，因此保留了它的包名与入口；
-Fabric 端的配置数据来自 [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport)。
+Fabric 端的配置数据来自 [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port)。
 已经为 NeoForge 写过配置屏幕的模组可以原样使用；其它加载器的模组只需注册一次。
 
 本项目与 NeoForged 无关联，也未获其认可或支持。
@@ -113,7 +113,7 @@ ConfigScreenRegistration.register(MOD_ID);
 - **[NeoForged 团队与各位贡献者](https://github.com/neoforged/NeoForge)** —— 本模组移植的配置界面
   来自 NeoForge，API 形状也沿用自它。
 - **[Fuzss](https://github.com/Fuzss)** ——
-  [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport) 提供了配置 API，让同一套界面在
+  [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port) 提供了配置 API，让同一套界面在
   Fabric 上成为可能。
 
 ## ⚖️ 许可证
