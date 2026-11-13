@@ -15,6 +15,9 @@ The screen is a port of NeoForge's implementation, so it keeps NeoForge's packag
 points. Mods that already register a NeoForge configuration screen work here unchanged; mods written
 for other loaders only need to register the screen once.
 
+This project is a port of [NeoForge](https://github.com/neoforged/NeoForge)'s configuration screen and,
+on Fabric, of the config API provided by [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport).
+
 This project is not affiliated with, endorsed by, or supported by NeoForged.
 
 ## 🎮 What you get
@@ -48,10 +51,11 @@ falls back to the comment written in the config spec.
 
 ## 🙏 Thanks
 
-- **The NeoForged team and contributors** — for NeoForge's configuration screen, which this project
-  ports, and for the API shape it keeps.
-- **Fuzss** — for Forge Config API Port, the config API that makes the same screen possible on
-  Fabric.
+- **[The NeoForged team and contributors](https://github.com/neoforged/NeoForge)** — for NeoForge's
+  configuration screen, which this project ports, and for the API shape it keeps.
+- **[Fuzss](https://github.com/Fuzss)** — for
+  [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport), the config API that makes the
+  same screen possible on Fabric.
 
 ## ⚖️ License
 
@@ -75,6 +79,9 @@ bundled in the jar as `LICENSE` and `LICENSE-LGPL-2.1.md`.
 
 界面是对 NeoForge 实现的移植，因此保留了它的包名与入口。已经为 NeoForge 写过配置屏幕的模组可以
 原样使用；其它加载器的模组只需注册一次。
+
+本项目移植的是 [NeoForge](https://github.com/neoforged/NeoForge) 的配置界面，Fabric 端的数据源来自
+[Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport)。
 
 本项目与 NeoForged 无关联，也未获其认可或支持。
 
@@ -106,8 +113,11 @@ ConfigScreenRegistration.register(MOD_ID);
 
 ## 🙏 致谢
 
-- **NeoForged 团队与各位贡献者** —— 本模组移植的配置界面来自 NeoForge，API 形状也沿用自它。
-- **Fuzss** —— Forge Config API Port 提供了配置 API，让同一套界面在 Fabric 上成为可能。
+- **[NeoForged 团队与各位贡献者](https://github.com/neoforged/NeoForge)** —— 本模组移植的配置界面
+  来自 NeoForge，API 形状也沿用自它。
+- **[Fuzss](https://github.com/Fuzss)** ——
+  [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport) 提供了配置 API，让同一套界面在
+  Fabric 上成为可能。
 
 ## ⚖️ 许可证
 
