@@ -11,12 +11,11 @@ Brings the in-game configuration screen that NeoForge ships with to other mod lo
 settings look and behave the same everywhere it runs: the same file overview, the same sections,
 the same widgets, tooltips, undo and reset.
 
-The screen is a port of NeoForge's implementation, so it keeps NeoForge's package names and entry
-points. Mods that already register a NeoForge configuration screen work here unchanged; mods written
-for other loaders only need to register the screen once.
-
-This project is a port of [NeoForge](https://github.com/neoforged/NeoForge)'s configuration screen and,
-on Fabric, of the config API provided by [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport).
+The screen is a port of [NeoForge](https://github.com/neoforged/NeoForge)'s implementation, so it
+keeps NeoForge's package names and entry points; on Fabric the config data comes from
+[Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport). Mods that already register a
+NeoForge configuration screen work here unchanged; mods written for other loaders only need to
+register the screen once.
 
 This project is not affiliated with, endorsed by, or supported by NeoForged.
 
@@ -77,11 +76,9 @@ bundled in the jar as `LICENSE` and `LICENSE-LGPL-2.1.md`.
 把 NeoForge 自带的游戏内配置界面带到了其它模组加载器上：同一个文件总览、同样的分组、同样的控件、
 提示框以及撤销与重置，让模组的设置在哪里打开都是同一个样子。
 
-界面是对 NeoForge 实现的移植，因此保留了它的包名与入口。已经为 NeoForge 写过配置屏幕的模组可以
-原样使用；其它加载器的模组只需注册一次。
-
-本项目移植的是 [NeoForge](https://github.com/neoforged/NeoForge) 的配置界面，Fabric 端的数据源来自
-[Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport)。
+界面是对 [NeoForge](https://github.com/neoforged/NeoForge) 实现的移植，因此保留了它的包名与入口；
+Fabric 端的配置数据来自 [Forge Config API Port](https://github.com/Fuzss/forgeconfigapiport)。
+已经为 NeoForge 写过配置屏幕的模组可以原样使用；其它加载器的模组只需注册一次。
 
 本项目与 NeoForged 无关联，也未获其认可或支持。
 
