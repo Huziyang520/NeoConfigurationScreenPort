@@ -1,11 +1,11 @@
-![Neo Configuration Screen Port](icon.png)
+![Neo Configuration Screen Port](https://raw.githubusercontent.com/Huziyang520/NeoConfigurationScreenPort/main/icon.png)
 
 # Neo Configuration Screen Port
 
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSING.md)
+[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/Huziyang520/NeoConfigurationScreenPort/blob/main/LICENSING.md)
 [![Based on NeoForge](https://img.shields.io/badge/based%20on-NeoForge-orange.svg)](https://github.com/neoforged/NeoForge)
-[![Client side](https://img.shields.io/badge/environment-client-brightgreen.svg)](#)
-[![Unofficial](https://img.shields.io/badge/official%20NeoForged%20product-no-lightgrey.svg)](#)
+[![Client side](https://img.shields.io/badge/environment-client-brightgreen.svg)](https://github.com/neoforged/NeoForge)
+[![Unofficial](https://img.shields.io/badge/official%20NeoForged%20product-no-lightgrey.svg)](https://neoforged.net/)
 
 Brings the in-game configuration screen that NeoForge ships with to other mod loaders, so a mod's
 settings look and behave the same everywhere it runs: the same file overview, the same sections,
