@@ -81,7 +81,7 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
                 int mouseX, int mouseY, boolean hovering, float partialTick) {
             if (index == 0 && !LOGGED) {
                 LOGGED = true;
-                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").info(
+                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").debug(
                         "[ConfigScreenPort] row0 render top={} left={} width={} height={} widgets={}",
                         top, left, width, height, this.widgets.size());
             }

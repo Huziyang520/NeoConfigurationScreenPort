@@ -54,7 +54,7 @@ public class OptionsSubScreen extends Screen {
         this.addRenderableWidget(this.list);
         this.addOptions();
         this.createFooter();
-        LOGGER.info("[ConfigScreenPort] init {} screen={}x{} list={}x{} rows={}", this.title.getString(),
+        LOGGER.debug("[ConfigScreenPort] init {} screen={}x{} list={}x{} rows={}", this.title.getString(),
                 this.width, this.height, this.list.getWidth(), this.list.getHeight(), this.list.children().size());
     }
 
@@ -110,7 +110,7 @@ public class OptionsSubScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (!this.loggedOnce) {
             this.loggedOnce = true;
-            LOGGER.info("[ConfigScreenPort] first render {}, rows={} rowWidth={}", this.getTitle().getString(),
+            LOGGER.debug("[ConfigScreenPort] first render {}, rows={} rowWidth={}", this.getTitle().getString(),
                     this.list == null ? -1 : this.list.children().size(),
                     this.list == null ? -1 : this.list.getRowWidth());
         }

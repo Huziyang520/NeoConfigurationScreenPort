@@ -14,6 +14,7 @@ import com.mojang.serialization.Codec;
 import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import com.huziyang.neoconfigurationscreenport.internal.ModLists;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +44,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -59,9 +59,12 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.config.ModConfig.Type;
 import com.huziyang.neoconfigurationscreenport.internal.ModConfigs;
+import com.huziyang.neoconfigurationscreenport.api.ListElements;
+import net.neoforged.neoforge.common.TranslatableEnum;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen.ConfigurationSectionScreen.Filter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
@@ -86,16 +89,16 @@ import org.jetbrains.annotations.Nullable;
  * use either the 2-argument constructor {@link #ConfigurationScreen(String, Screen)} if you don't need to extend the system, or the 3-argument one and return a subclass of
  * {@link ConfigurationSectionScreen} from the TriFunction.<p>
  *
- * In any case, register your configuration screen in your client mod class like this:
+ * In any case, register your configuration screen once, on the client:
  *
- * {@snippet :
- * @Mod(value = "examplemod", dist = Dist.CLIENT)
- * public class ExampleMod {
- *     public ExampleMod(ModContainer container) {
- *         container.registerExtensionPoint(IConfigScreenFactory.class, (mc, parent) -> new ConfigurationScreen(container, parent));
- *     }
- * }
- * }
+ * <pre>{@code
+ * ConfigScreenRegistration.register("examplemod");
+ * }</pre>
+ *
+ * The {@code ModContainer} constructors match NeoForge's, so a screen written for NeoForge compiles here as is;
+ * only the registration call differs, because Forge has no config screen extension point of its own. Forge
+ * 1.20.1 also has no {@code @Mod(dist = Dist.CLIENT)}, so guard the call with
+ * {@code FMLEnvironment.dist == Dist.CLIENT} or put it in a client only class.
  *
  * For extending the system, see the documentation on {@link ConfigurationSectionScreen}.<p>
  *
@@ -273,6 +276,19 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         this.sectionScreen = sectionScreen;
     }
 
+    // Neo Configuration Screen Port: Neo code passes its ModContainer, so the same call compiles here unchanged
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent) {
+        this(modContainer.getModId(), parent);
+    }
+
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, ConfigurationSectionScreen.Filter filter) {
+        this(modContainer.getModId(), parent, filter);
+    }
+
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, QuadFunction<ConfigurationScreen, ModConfig.Type, ModConfig, Component, Screen> sectionScreen) {
+        this(modContainer.getModId(), parent, sectionScreen);
+    }
+
     @Override
     protected void addOptions() {
         Button btn = null;
@@ -445,7 +461,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                         parentContext.entries, parentContext.valueSpecs, parentContext.keylist, null);
             }
 
-            private ArrayList<String> makeKeyList(final String key) {
+            public ArrayList<String> makeKeyList(final String key) {
                 final ArrayList<String> result = new ArrayList<>(keylist);
                 result.add(key);
                 return result;
@@ -682,9 +698,9 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                         elements.add(context.filter.filterEntry(context, key, element));
                     } else if (rawValue instanceof UnmodifiableConfig subsection
                             && context.valueSpecs.get(key) instanceof UnmodifiableConfig subconfig) {
-                        elements.add(createSection(key, subconfig, subsection));
+                        elements.add(context.filter.filterEntry(context, key, createSection(key, subconfig, subsection)));
                     } else if (rawValue instanceof UnmodifiableConfig subsection) {
-                        elements.add(createSection(key, subsection, subsection));
+                        elements.add(context.filter.filterEntry(context, key, createSection(key, subsection, subsection)));
                     } else {
                         elements.add(context.filter.filterEntry(context, key, createOtherSection(key, rawValue)));
                     }
@@ -704,7 +720,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     }
                 }
 
-                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").info(
+                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").debug(
                         "[ConfigScreenPort] rebuild entries={} elements={} rows={}", context.entries.size(), elements.size(), list.children().size());
                 if (hasUndoableElements && undoButton == null) {
                     createUndoButton();
@@ -835,7 +851,29 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
             final List<T> list = Arrays.stream(clazz.getEnumConstants()).filter(value -> spec == null || spec.test(value)).toList();
 
-            return createCycleValue(key, list, source.get(), value -> Component.literal(value.name()), target);
+            return createCycleValue(key, list, source.get(), ConfigurationSectionScreen::enumName, target);
+        }
+
+        /**
+         * The name an enum is shown with: its own translation when it has one.
+         * <p>
+         * The method is also looked up on the enum itself, because a mod that runs on a dedicated server cannot
+         * implement {@link TranslatableEnum} - that interface ships in this client only mod, and the enum is loaded
+         * on both sides.
+         */
+        protected static Component enumName(final Enum<?> value) {
+            if (value instanceof TranslatableEnum translatable) {
+                return translatable.getTranslatedName();
+            }
+            try {
+                final Method method = value.getClass().getMethod("getTranslatedName");
+                if (method.invoke(value) instanceof Component component) {
+                    return component;
+                }
+            } catch (final ReflectiveOperationException | SecurityException ignored) {
+                // No such method, or it is not readable: the constant name is the fallback.
+            }
+            return Component.literal(value.name());
         }
 
         @Nullable
@@ -1056,6 +1094,11 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         protected final ForgeConfigSpec.ConfigValue<List<T>> valueList;
         // the copy of the data we are working on
         protected List<T> cfgList;
+        // Whether moving/deleting the entry at an index keeps the list valid. Computed in rebuild(), so the
+        // row widgets do not copy the whole list once per entry and frame.
+        protected boolean[] upValid = new boolean[0];
+        protected boolean[] downValid = new boolean[0];
+        protected boolean[] delValid = new boolean[0];
 
         public ConfigurationListScreen(final Context context, final String key, final Component title, final ValueSpec spec,
                                        final ForgeConfigSpec.ConfigValue<List<T>> valueList) {
@@ -1070,6 +1113,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         protected ConfigurationSectionScreen rebuild() {
             if (list != null) { // this may be called early, skip and wait for init() then
                 list.clearRows();
+                updateValidity();
 
                 for (int idx = 0; idx < cfgList.size(); idx++) {
                     var entry = cfgList.get(idx);
@@ -1129,24 +1173,72 @@ public final class ConfigurationScreen extends OptionsSubScreen {
          */
         @SuppressWarnings("unchecked")
         protected void createAddElementButton() {
-            // Neo Configuration Screen Port: Forge exposes no list element factory/size range, adding elements stays disabled
-            final Supplier<?> newElement = null;
-            final Range<Integer> sizeRange = null;
-
-            if (newElement != null && sizeRange.test(cfgList.size() + 1)) {
-                list.addSmall(new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.empty(), font), Button.builder(NEW_LIST_ELEMENT, button -> {
-                    List<T> newValue = new ArrayList<>(cfgList);
-                    newValue.add((T) newElement.get());
-                    undoManager.add(v -> {
-                        cfgList = v;
-                        onChanged(key);
-                    }, newValue, v -> {
-                        cfgList = v;
-                        onChanged(key);
-                    }, cfgList);
-                    rebuild();
-                }).build());
+            final ListElements.Spec spec = listElementSpec();
+            final Supplier<?> newElement = spec.factory();
+            if (newElement == null || !spec.allowsSize(cfgList.size() + 1)) {
+                return;
             }
+            list.addSmall(new StringWidget(Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.empty(), font), Button.builder(NEW_LIST_ELEMENT, button -> {
+                List<T> newValue = new ArrayList<>(cfgList);
+                newValue.add((T) newElement.get());
+                undoManager.add(v -> {
+                    cfgList = v;
+                    onChanged(key);
+                }, newValue, v -> {
+                    cfgList = v;
+                    onChanged(key);
+                }, cfgList);
+                rebuildLater();
+            }).build());
+        }
+
+        /**
+         * The template for a new entry. A registered one wins; otherwise it comes from the element type of the
+         * default value, which covers every list of a type this screen can edit.
+         */
+        protected ListElements.Spec listElementSpec() {
+            final Optional<ListElements.Spec> registered =
+                    ListElements.lookup(context.modId, String.join(".", context.makeKeyList(key)));
+            if (registered.isPresent()) {
+                return registered.get();
+            }
+            return new ListElements.Spec(guessElementFactory(), 0, Integer.MAX_VALUE);
+        }
+
+        /** The default the screen can append, or null when the element type is not one it can edit. */
+        @Nullable
+        protected Supplier<?> guessElementFactory() {
+            Class<?> type = null;
+            for (final T value : cfgList) {
+                if (value != null) {
+                    type = value.getClass();
+                    break;
+                }
+            }
+            if (type == null) {
+                for (final T value : valueList.getDefault()) {
+                    if (value != null) {
+                        type = value.getClass();
+                        break;
+                    }
+                }
+            }
+            if (type == String.class) {
+                return () -> "";
+            }
+            if (type == Integer.class) {
+                return () -> 0;
+            }
+            if (type == Long.class) {
+                return () -> 0L;
+            }
+            if (type == Double.class) {
+                return () -> 0.0D;
+            }
+            if (type == Boolean.class) {
+                return () -> Boolean.FALSE;
+            }
+            return null;
         }
 
         /**
@@ -1220,18 +1312,64 @@ public final class ConfigurationScreen extends OptionsSubScreen {
          * Swap the given element with the next one. Should be called by the list label widget to manipulate the list.
          */
         protected boolean swap(final int idx, final boolean simulate) {
-            final List<T> values = new ArrayList<>(cfgList);
-            values.add(idx, values.remove(idx + 1));
-            return addUndoListener(simulate, values);
+            return addUndoListener(simulate, swapped(idx));
         }
 
         /**
          * Remove the given element. Should be called by the list label widget to manipulate the list.
          */
         protected boolean del(final int idx, final boolean simulate) {
+            return addUndoListener(simulate, removed(idx));
+        }
+
+        /** Recomputes the button states of every row; called once per rebuild instead of once per frame. */
+        protected void updateValidity() {
+            final int size = cfgList.size();
+            upValid = new boolean[size];
+            downValid = new boolean[size];
+            delValid = new boolean[size];
+            for (int idx = 0; idx < size; idx++) {
+                if (idx > 0) {
+                    upValid[idx] = isValidList(swapped(idx - 1));
+                }
+                if (idx + 1 < size) {
+                    downValid[idx] = isValidList(swapped(idx));
+                }
+                delValid[idx] = isValidList(removed(idx));
+            }
+        }
+
+        private List<T> swapped(final int idx) {
+            final List<T> values = new ArrayList<>(cfgList);
+            values.add(idx, values.remove(idx + 1));
+            return values;
+        }
+
+        private List<T> removed(final int idx) {
             final List<T> values = new ArrayList<>(cfgList);
             values.remove(idx);
-            return addUndoListener(simulate, values);
+            return values;
+        }
+
+        private boolean rebuildQueued;
+
+        /** Rebuilds on the next tick: the pressed row button is removed from the list that is dispatching it. */
+        protected void rebuildLater() {
+            final Minecraft minecraft = this.minecraft;
+            if (minecraft == null) {
+                rebuild();
+                return;
+            }
+            if (rebuildQueued) {
+                return;
+            }
+            rebuildQueued = true;
+            minecraft.execute(() -> {
+                rebuildQueued = false;
+                if (minecraft.screen == this) {
+                    rebuild();
+                }
+            });
         }
 
         private boolean addUndoListener(boolean simulate, List<T> values) {
@@ -1244,7 +1382,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     cfgList = v;
                     onChanged(key);
                 }, cfgList);
-                rebuild();
+                rebuildLater();
             }
             return valid;
         }
@@ -1287,7 +1425,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                             cfgList = v;
                             onChanged(key);
                         }, cfgList);
-                rebuild();
+                rebuildLater();
             }).tooltip(Tooltip.create(RESET_TOOLTIP)).width(Button.SMALL_WIDTH).build();
         }
 
@@ -1389,10 +1527,10 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
             protected void checkButtons() {
                 upButton.visible = !isFirst;
-                upButton.active = !isFirst && swap(idx - 1, true);
+                upButton.active = !isFirst && idx < upValid.length && upValid[idx];
                 downButton.visible = !isLast;
-                downButton.active = !isLast && swap(idx, true);
-                delButton.active = !cfgList.isEmpty() && del(idx, true);
+                downButton.active = !isLast && idx < downValid.length && downValid[idx];
+                delButton.active = idx < delValid.length && delValid[idx];
             }
 
             @Override

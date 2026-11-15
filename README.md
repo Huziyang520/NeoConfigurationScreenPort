@@ -13,9 +13,10 @@ the same widgets, tooltips, undo and reset.
 
 The screen is a port of [NeoForge](https://github.com/neoforged/NeoForge)'s implementation, so it
 keeps NeoForge's package names and entry points; on Fabric the config data comes from
-[Forge Config API Port](https://github.com/Fuzss/forge-config-api-port). Mods that already register a
-NeoForge configuration screen work here unchanged; mods written for other loaders only need to
-register the screen once.
+[Forge Config API Port](https://github.com/Fuzss/forge-config-api-port). A screen written for NeoForge
+keeps its code: the constructors take the loader's `ModContainer`, the section subclass and the filter
+callback keep their signatures. Only the registration call is different, because Forge has no config
+screen extension point of its own — this project supplies it as a one-liner.
 
 This project is not affiliated with, endorsed by, or supported by NeoForged.
 
@@ -24,12 +25,16 @@ This project is not affiliated with, endorsed by, or supported by NeoForged.
 - 📄 One screen per config file, with a breadcrumb title so you always know where you are.
 - 🗂️ Sections become sub-screens, in the order your config defines them.
 - 🎚️ Widgets chosen from the value type: switches for booleans, sliders for ranged numbers, text
-  boxes for free numbers and strings, cycle buttons for enums, a dedicated screen for lists.
+  boxes for free numbers and strings, cycle buttons for enums (translated when the enum asks for it),
+  a dedicated screen for lists.
+- ➕ Lists are edited on their own screen: every entry can be added, moved up or down and deleted, with
+  undo, reset, and the type of a new entry taken from the list's default value.
 - 💬 Tooltips built from your config comments, with translated tooltips taking priority.
 - ↩️ Unlimited undo, reset-to-default, and a restart hint when a value only takes effect later.
 - 🔒 Elements that cannot be edited right now are disabled with the reason shown, instead of
   failing silently.
-- 🌐 Mods without translations still get readable labels instead of raw translation keys.
+- 🌐 Mods without translations still get readable labels instead of raw translation keys, and the
+  screen's own labels ship in the same languages NeoForge ships them in.
 
 ## 🚀 Using it from your mod
 
@@ -41,7 +46,11 @@ ConfigScreenRegistration.register(MOD_ID);
 
 Your configs then appear behind the config button in the mod list. Pass an `IConfigScreenFactory` to
 supply your own screen, or subclass `ConfigurationScreen` to change behaviour while keeping the
-layout.
+layout. The call belongs on the client: this game version has no `@Mod(dist = ...)`, so check
+`FMLEnvironment.dist == Dist.CLIENT` or keep it in a client only class.
+
+A list accepts new entries of the element type its default value uses. Register a template when that is
+not enough: `ListElements.register(MOD_ID, "path.to.key", () -> "", 0, 64)`.
 
 Translation keys follow NeoForge's scheme: `<mod id>.configuration.<path>` for values,
 `<mod id>.configuration.title` for the title of a config file and
@@ -78,7 +87,8 @@ bundled in the jar as `LICENSE` and `LICENSE-LGPL-2.1.md`.
 
 界面是对 [NeoForge](https://github.com/neoforged/NeoForge) 实现的移植，因此保留了它的包名与入口；
 Fabric 端的配置数据来自 [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port)。
-已经为 NeoForge 写过配置屏幕的模组可以原样使用；其它加载器的模组只需注册一次。
+按 NeoForge 写的界面代码在这里不用改：构造器收加载器的 `ModContainer`，子屏幕与过滤器回调的签名一致；
+只有注册那一步不同——Forge 没有自己的配置屏幕扩展点，本项目用一行补上。
 
 本项目与 NeoForged 无关联，也未获其认可或支持。
 
@@ -86,12 +96,14 @@ Fabric 端的配置数据来自 [Forge Config API Port](https://github.com/Fuzss
 
 - 📄 每个配置文件一个界面，标题是面包屑，随时知道自己在哪一层。
 - 🗂️ 分组自动成为子界面，顺序与配置里声明的一致。
-- 🎚️ 按值类型选择控件：布尔是开关，带范围的数字是滑块，普通数字与文本是输入框，枚举是循环按钮，
-  列表有专门界面。
+- 🎚️ 按值类型选择控件：布尔是开关，带范围的数字是滑块，普通数字与文本是输入框，枚举是循环按钮
+  （实现了翻译的枚举会显示名字），列表有专门界面。
+- ➕ 列表在自己的界面里编辑：每条都能新增、上移、下移、删除，带撤销与恢复默认；新条目的初值取自
+  该列表的默认值。
 - 💬 提示框取自配置注释，有翻译时优先使用翻译。
 - ↩️ 无限撤销、恢复默认，以及需要重启才生效时的提示。
 - 🔒 当前不可编辑的条目会置灰并说明原因，而不是静默失败。
-- 🌐 没写翻译的模组也不会看到裸的翻译键，而是可读的名字。
+- 🌐 没写翻译的模组也不会看到裸的翻译键，而是可读的名字；界面自身的文案与 NeoForge 支持的语种一致。
 
 ## 🚀 接入方式
 
@@ -102,7 +114,11 @@ ConfigScreenRegistration.register(MOD_ID);
 ```
 
 配置随后会出现在模组列表的配置按钮后面。需要自定义时传入 `IConfigScreenFactory`，或在保留布局
-的前提下继承 `ConfigurationScreen`。
+的前提下继承 `ConfigurationScreen`。这行调用属于客户端：本游戏版本没有 `@Mod(dist = ...)`，请用
+`FMLEnvironment.dist == Dist.CLIENT` 判断，或放进只在客户端加载的类里。
+
+列表的新条目沿用默认值的元素类型；不够用时再登记模板：
+`ListElements.register(MOD_ID, "path.to.key", () -> "", 0, 64)`。
 
 翻译键沿用 NeoForge 的规则：值是 `<模组 id>.configuration.<路径>`，标题是
 `<模组 id>.configuration.title`，文件总览里的一行是 `<模组 id>.configuration.section.<文件名>`。
