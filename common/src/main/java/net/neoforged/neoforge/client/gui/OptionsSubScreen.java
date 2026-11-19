@@ -6,7 +6,6 @@
 package net.neoforged.neoforge.client.gui;
 
 import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
-import com.mojang.logging.LogUtils;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -21,14 +20,12 @@ import net.minecraft.network.chat.Component;
  * that rewrite selection lists keep working.
  */
 public class OptionsSubScreen extends Screen {
-    private static final org.slf4j.Logger LOGGER = LogUtils.getLogger();
     /** Same header/footer split as 1.21's default {@code HeaderAndFooterLayout}. */
     private static final int HEADER_HEIGHT = 33;
     private static final int FOOTER_HEIGHT = 36;
     private static final int BUTTON_SPACING = 8;
     /** 1.20.1 has no {@code Button.BIG_WIDTH}; 1.21's footer uses 200 for the lone done button. */
     private static final int WIDE_BUTTON_WIDTH = 200;
-    private boolean loggedOnce;
     protected final Screen lastScreen;
     protected final Options options;
     protected ConfigOptionsList list;
@@ -54,8 +51,6 @@ public class OptionsSubScreen extends Screen {
         this.addRenderableWidget(this.list);
         this.addOptions();
         this.createFooter();
-        LOGGER.debug("[ConfigScreenPort] init {} screen={}x{} list={}x{} rows={}", this.title.getString(),
-                this.width, this.height, this.list.getWidth(), this.list.getHeight(), this.list.children().size());
     }
 
     /**
@@ -98,7 +93,7 @@ public class OptionsSubScreen extends Screen {
     private void place(final AbstractWidget widget, final int x, final int y) {
         widget.setX(x);
         widget.setY(y);
-        if (!this.renderables.contains(widget)) {
+        if (!this.children().contains(widget)) {
             this.addRenderableWidget(widget);
         }
     }
@@ -108,12 +103,6 @@ public class OptionsSubScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (!this.loggedOnce) {
-            this.loggedOnce = true;
-            LOGGER.debug("[ConfigScreenPort] first render {}, rows={} rowWidth={}", this.getTitle().getString(),
-                    this.list == null ? -1 : this.list.children().size(),
-                    this.list == null ? -1 : this.list.getRowWidth());
-        }
         // 1.20.1 screens draw their own backdrop; without it the parent screen shows through.
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);

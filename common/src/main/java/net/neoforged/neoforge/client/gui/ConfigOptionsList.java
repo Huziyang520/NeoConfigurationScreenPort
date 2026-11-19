@@ -7,7 +7,7 @@ package net.neoforged.neoforge.client.gui;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,7 +23,6 @@ import net.minecraft.client.gui.narration.NarratableEntry;
  * {@code OptionsList} contract instead of the option-instance based 1.20.1 one.
  */
 public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOptionsList.Entry> {
-    private static boolean LOGGED;
 
     /**
      * The 1.20.1 list takes {@code (minecraft, width, height, y0, y1, itemHeight)}: y1 is passed
@@ -79,12 +78,6 @@ public class ConfigOptionsList extends ContainerObjectSelectionList<ConfigOption
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height,
                 int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (index == 0 && !LOGGED) {
-                LOGGED = true;
-                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").debug(
-                        "[ConfigScreenPort] row0 render top={} left={} width={} height={} widgets={}",
-                        top, left, width, height, this.widgets.size());
-            }
             int x = left;
             for (final AbstractWidget widget : this.widgets) {
                 // 1.20.1's EditBox paints its frame one pixel outside its bounds, so inset it to match a button.

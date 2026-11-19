@@ -9,12 +9,16 @@
   "license": "MPL-2.0",
   "environment": "client",
   "entrypoints": {
-    "client": ["com.huziyang.neoconfigurationscreenport.fabric.ConfigScreenPortFabric"]
+    "client": ["com.huziyang.neoconfigurationscreenport.fabric.ConfigScreenPortFabric"],
+    "modmenu": ["com.huziyang.neoconfigurationscreenport.fabric.ConfigScreenPortModMenu"]
   },
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.20.1",
     "java": ">=17",
     "forgeconfigapiport": ">=8.0.0"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -57,6 +57,15 @@ Translation keys follow NeoForge's scheme: `<mod id>.configuration.<path>` for v
 `<mod id>.configuration.section.<file>` for the entry in the file overview. Anything you leave out
 falls back to the comment written in the config spec.
 
+## ⚠️ Known differences on this game version
+
+- There is no startup config type, so a value that only takes effect after a game restart shows the
+  restart hint instead of a separate startup screen.
+- A list only accepts new entries whose type its default value reveals. Register a template with
+  `ListElements.register` when the default does not reveal the type, or when the list has size limits.
+- On Fabric the screen needs [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port)
+  installed, and the config button is the one Mod Menu adds.
+
 ## 🙏 Thanks
 
 - **[The NeoForged team and contributors](https://github.com/neoforged/NeoForge)** — for NeoForge's
@@ -123,6 +132,14 @@ ConfigScreenRegistration.register(MOD_ID);
 翻译键沿用 NeoForge 的规则：值是 `<模组 id>.configuration.<路径>`，标题是
 `<模组 id>.configuration.title`，文件总览里的一行是 `<模组 id>.configuration.section.<文件名>`。
 缺失的部分回退到配置规格里写的注释。
+
+## ⚠️ 本游戏版本的已知差异
+
+- 这里没有启动期配置类型：只在重启游戏后生效的值会显示重启提示，而不是单独的启动期界面。
+- 列表只能新增“默认值能看出元素类型”的条目；看不出来或列表有条数限制时，用 `ListElements.register`
+  登记模板。
+- Fabric 端需要安装 [Forge Config API Port](https://github.com/Fuzss/forge-config-api-port)，配置按钮
+  由 Mod Menu 提供。
 
 ## 🙏 致谢
 

@@ -13,6 +13,7 @@ import com.mojang.realmsclient.RealmsMainScreen;
 import com.mojang.serialization.Codec;
 import com.huziyang.neoconfigurationscreenport.ConfigScreenPortConfig;
 import com.huziyang.neoconfigurationscreenport.internal.ModLists;
+import com.huziyang.neoconfigurationscreenport.internal.ValueRanges;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -59,7 +61,6 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.config.ModConfig.Type;
 import com.huziyang.neoconfigurationscreenport.internal.ModConfigs;
@@ -68,7 +69,6 @@ import net.neoforged.neoforge.common.TranslatableEnum;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen.ConfigurationSectionScreen.Filter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
-import net.minecraftforge.common.ForgeConfigSpec.Range;
 import com.huziyang.neoconfigurationscreenport.api.RestartType;
 import net.minecraftforge.common.ForgeConfigSpec.ValueSpec;
 import org.apache.logging.log4j.LogManager;
@@ -156,6 +156,14 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 return false;
             }
             return true;
+        }
+
+        /** A line shown only when its translation exists, matching how NeoForge appends tooltip warnings. */
+        public Component optional(final Component prefix, final String translationKey, final ChatFormatting... style) {
+            if (I18n.exists(translationKey)) {
+                return Component.empty().append(prefix).append(Component.translatable(translationKey).withStyle(style));
+            }
+            return Component.empty();
         }
 
         public void finish() {
@@ -276,17 +284,17 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         this.sectionScreen = sectionScreen;
     }
 
-    // Neo Configuration Screen Port: Neo code passes its ModContainer, so the same call compiles here unchanged
-    public ConfigurationScreen(final ModContainer modContainer, final Screen parent) {
-        this(modContainer.getModId(), parent);
+    // Neo Configuration Screen Port: the loader's ModContainer stays untyped so the same call compiles on both loaders
+    public ConfigurationScreen(final Object modContainer, final Screen parent) {
+        this(ModLists.modIdOf(modContainer), parent);
     }
 
-    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, ConfigurationSectionScreen.Filter filter) {
-        this(modContainer.getModId(), parent, filter);
+    public ConfigurationScreen(final Object modContainer, final Screen parent, ConfigurationSectionScreen.Filter filter) {
+        this(ModLists.modIdOf(modContainer), parent, filter);
     }
 
-    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, QuadFunction<ConfigurationScreen, ModConfig.Type, ModConfig, Component, Screen> sectionScreen) {
-        this(modContainer.getModId(), parent, sectionScreen);
+    public ConfigurationScreen(final Object modContainer, final Screen parent, QuadFunction<ConfigurationScreen, ModConfig.Type, ModConfig, Component, Screen> sectionScreen) {
+        this(ModLists.modIdOf(modContainer), parent, sectionScreen);
     }
 
     @Override
@@ -322,7 +330,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     btn.active = false;
                     count = 99; // prevent autoClose
                 }
-                tooltip.append(Component.translatable(FILENAME_TOOLTIP, modConfig.getFileName()));
+                tooltip.append(Component.translatable(FILENAME_TOOLTIP, modConfig.getFileName()).withStyle(ChatFormatting.GRAY));
                 if (ConfigScreenPortConfig.SHOW_TOOLTIPS.get()) {
                     btn.setTooltip(Tooltip.create(tooltip));
                 }
@@ -624,11 +632,11 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             return valueSpec != null ? getValueSpec(key).getComment() : context.modSpec.getLevelComment(context.makeKeyList(key));
         }
 
-        protected <T> OptionInstance.TooltipSupplier<T> getTooltip(final String key, @Nullable Range<?> range) {
+        protected <T> OptionInstance.TooltipSupplier<T> getTooltip(final String key, @Nullable Object range) {
             return OptionInstance.cachedConstantTooltip(getTooltipComponent(key, range));
         }
 
-        protected Component getTooltipComponent(final String key, @Nullable Range<?> range) {
+        protected Component getTooltipComponent(final String key, @Nullable Object range) {
             final String tooltipKey = getTranslationKey(key) + ".tooltip";
             final String comment = getComment(key);
             final boolean hasTranslatedTooltip = translationChecker.existsWithFallback(tooltipKey);
@@ -636,9 +644,10 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             if (hasTranslatedTooltip || !Strings.isBlank(comment)) {
                 component = component.append(Component.literal("\n\n")).append(Component.translatableWithFallback(tooltipKey, comment));
             }
+            component = component.append(translationChecker.optional(Component.literal("\n\n"), tooltipKey + ".warning", ChatFormatting.RED, ChatFormatting.BOLD));
             if (hasTranslatedTooltip && range != null) {
                 component = component.append(Component.literal("\n\n"))
-                        .append(Component.translatable(RANGE_TOOLTIP, range.toString()).withStyle(ChatFormatting.GRAY));
+                        .append(Component.translatable(RANGE_TOOLTIP, ValueRanges.text(range)).withStyle(ChatFormatting.GRAY));
             }
             return component;
         }
@@ -698,9 +707,9 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                         elements.add(context.filter.filterEntry(context, key, element));
                     } else if (rawValue instanceof UnmodifiableConfig subsection
                             && context.valueSpecs.get(key) instanceof UnmodifiableConfig subconfig) {
-                        elements.add(context.filter.filterEntry(context, key, createSection(key, subconfig, subsection)));
+                        elements.add(applyFilter(context, key, createSection(key, subconfig, subsection)));
                     } else if (rawValue instanceof UnmodifiableConfig subsection) {
-                        elements.add(context.filter.filterEntry(context, key, createSection(key, subsection, subsection)));
+                        elements.add(applyFilter(context, key, createSection(key, subsection, subsection)));
                     } else {
                         elements.add(context.filter.filterEntry(context, key, createOtherSection(key, rawValue)));
                     }
@@ -720,14 +729,18 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     }
                 }
 
-                org.slf4j.LoggerFactory.getLogger("ConfigScreenPort").debug(
-                        "[ConfigScreenPort] rebuild entries={} elements={} rows={}", context.entries.size(), elements.size(), list.children().size());
                 if (hasUndoableElements && undoButton == null) {
                     createUndoButton();
                     createResetButton();
                 }
             }
             return this;
+        }
+
+        /** An empty section produces no element, and a filter must not be handed that null. */
+        @Nullable
+        private static Element applyFilter(final Context context, final String key, @Nullable final Element element) {
+            return element == null ? null : context.filter.filterEntry(context, key, element);
         }
 
         /**
@@ -818,20 +831,19 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         // Neo Configuration Screen Port: 1.20.1 keeps OptionInstance.ValueSet package private, so cycling uses CycleButton directly
         protected <T> Element createCycleValue(final String key, final List<T> values, final T initial,
-                final java.util.function.Function<T, Component> nameOf, final Consumer<T> target) {
-            final T current = initial;
+                final java.util.function.Function<T, Component> nameOf, final Supplier<T> current, final Consumer<T> target) {
             final CycleButton<T> button = CycleButton.builder(nameOf)
                     .withValues(CycleButton.ValueListSupplier.create(values))
                     .displayOnlyValue()
-                    .withInitialValue(current)
-                    .create(0, 0, Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.empty(), (source, newValue) -> {
+                    .withInitialValue(initial)
+                    .create(0, 0, Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, Component.empty(), (pressedButton, newValue) -> {
                         undoManager.add(v -> {
                             target.accept(v);
                             onChanged(key);
                         }, newValue, v -> {
                             target.accept(v);
                             onChanged(key);
-                        }, current);
+                        }, current.get());
                     });
             applyTooltip(button, getTooltipComponent(key, null));
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null), button, true);
@@ -840,7 +852,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createBooleanValue(final String key, final ValueSpec spec, final Supplier<Boolean> source, final Consumer<Boolean> target) {
             return createCycleValue(key, ImmutableList.of(Boolean.TRUE, Boolean.FALSE), source.get(),
-                    value -> Component.translatable(value ? "options.on" : "options.off"), target);
+                    value -> Component.translatable(value ? "options.on" : "options.off"), source, target);
         }
 
         @Nullable
@@ -851,7 +863,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
             final List<T> list = Arrays.stream(clazz.getEnumConstants()).filter(value -> spec == null || spec.test(value)).toList();
 
-            return createCycleValue(key, list, source.get(), ConfigurationSectionScreen::enumName, target);
+            return createCycleValue(key, list, source.get(), ConfigurationSectionScreen::enumName, source, target);
         }
 
         /**
@@ -878,22 +890,25 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         @Nullable
         protected Element createIntegerValue(final String key, final ValueSpec spec, final Supplier<Integer> source, final Consumer<Integer> target) {
-            final Range<Integer> range = spec != null ? spec.getRange() : null;
-            final int min = range != null ? range.getMin() : 0;
-            final int max = range != null ? range.getMax() : Integer.MAX_VALUE;
+            final Object range = ValueRanges.of(spec);
+            final Integer min = ValueRanges.min(range);
+            final Integer max = ValueRanges.max(range);
+            final int lowest = min != null ? min : 0;
+            final int highest = max != null ? max : Integer.MAX_VALUE;
 
-            if ((long) max - (long) min < MAX_SLIDER_SIZE) {
-                return createSlider(key, source, target, range);
+            if ((long) highest - (long) lowest < MAX_SLIDER_SIZE) {
+                return createSlider(key, source, target, lowest, highest, range);
             } else {
                 return createNumberBox(key, spec, source, target, null, Integer::decode, 0);
             }
         }
 
         @Nullable
-        protected Element createSlider(final String key, final Supplier<Integer> source, final Consumer<Integer> target, final @Nullable Range<Integer> range) {
+        protected Element createSlider(final String key, final Supplier<Integer> source, final Consumer<Integer> target,
+                final int min, final int max, @Nullable final Object range) {
             return new Element(getTranslationComponent(key), getTooltipComponent(key, null),
                     new OptionInstance<>(getTranslationKey(key), tooltipsEnabled() ? getTooltip(key, range) : OptionInstance.noTooltip(),
-                            (caption, displayvalue) -> Component.literal("" + displayvalue), new OptionInstance.IntRange(range != null ? range.getMin() : 0, range != null ? range.getMax() : Integer.MAX_VALUE),
+                            (caption, displayvalue) -> Component.literal("" + displayvalue), new OptionInstance.IntRange(min, max),
                             null, source.get(), newValue -> {
                         if (!newValue.equals(source.get())) {
                             undoManager.add(v -> {
@@ -916,7 +931,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected <T extends Number & Comparable<? super T>> Element createNumberBox(final String key, final ValueSpec spec, final Supplier<T> source,
                                                                                      final Consumer<T> target, @Nullable final Predicate<T> tester, final Function<String, T> parser, final T zero) {
-            final Range<T> range = spec != null ? spec.getRange() : null;
+            final Object range = ValueRanges.of(spec);
 
             final EditBox box = new EditBox(font, 0, 0, Button.DEFAULT_WIDTH, Button.DEFAULT_HEIGHT, getTranslationComponent(key));
             box.setEditable(true);
@@ -925,7 +940,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                     parser.apply(newValueString);
                     return true;
                 } catch (final NumberFormatException e) {
-                    return isPartialNumber(newValueString, (range == null || range.getMin().compareTo(zero) < 0));
+                    return isPartialNumber(newValueString, (range == null || ValueRanges.<T>min(range).compareTo(zero) < 0));
                 }
             });
             applyTooltip(box, getTooltipComponent(key, range));
@@ -933,7 +948,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             box.setResponder(newValueString -> {
                 try {
                     final T newValue = parser.apply(newValueString);
-                    if (tester != null ? tester.test(newValue) : (newValue != null && (range == null || range.test(newValue)) && (spec == null || spec.test(newValue)))) {
+                    if (tester != null ? tester.test(newValue) : (newValue != null && ValueRanges.test(range, newValue) && (spec == null || spec.test(newValue)))) {
                         if (!newValue.equals(source.get())) {
                             undoManager.add(v -> {
                                 target.accept(v);
@@ -979,7 +994,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         @Nullable
         protected Element createSection(final String key, final UnmodifiableConfig subconfig, final UnmodifiableConfig subsection) {
             if (subconfig.isEmpty()) return null;
-            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
+            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(getTranslationKey(key) + ".button", SECTION_TEXT))),
                     pressed -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
                             k -> new ConfigurationSectionScreen(context, this, subconfig.valueMap(), key, subsection.entrySet(), getTranslationComponent(key)).rebuild())))
                     .width(Button.DEFAULT_WIDTH)
@@ -990,7 +1005,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
 
         @Nullable
         protected <T> Element createList(final String key, final ValueSpec spec, final ForgeConfigSpec.ConfigValue<List<T>> list) {
-            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(key + ".button", SECTION_TEXT))),
+            final Button button = Button.builder(Component.translatable(SECTION, Component.translatable(translationChecker.check(getTranslationKey(key) + ".button", SECTION_TEXT))),
                     pressed -> minecraft.setScreen(sectionCache.computeIfAbsent(key,
                             k -> new ConfigurationListScreen<>(Context.list(context, this), key, Component.translatable(CRUMB, this.getTitle(), CRUMB_SEPARATOR, getTranslationComponent(key)), spec, list)).rebuild()))
                     .width(Button.DEFAULT_WIDTH)
@@ -1328,6 +1343,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             upValid = new boolean[size];
             downValid = new boolean[size];
             delValid = new boolean[size];
+            // Removing an entry has to respect the size limits registered for the list as well.
+            final boolean canRemove = listElementSpec().allowsSize(size - 1);
             for (int idx = 0; idx < size; idx++) {
                 if (idx > 0) {
                     upValid[idx] = isValidList(swapped(idx - 1));
@@ -1335,7 +1352,7 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 if (idx + 1 < size) {
                     downValid[idx] = isValidList(swapped(idx));
                 }
-                delValid[idx] = isValidList(removed(idx));
+                delValid[idx] = canRemove && isValidList(removed(idx));
             }
         }
 
@@ -1435,7 +1452,9 @@ public final class ConfigurationScreen extends OptionsSubScreen {
          * It includes buttons for "move element up", "move element down", and "delete element" as well as a label.
          *
          */
-        public class ListLabelWidget extends AbstractWidget {
+        public class ListLabelWidget extends AbstractWidget implements ContainerEventHandler {
+            private GuiEventListener focused;
+            private boolean dragging;
             protected final Button upButton = Button.builder(MOVE_LIST_ELEMENT_UP, this::up).build();
             protected final Button downButton = Button.builder(MOVE_LIST_ELEMENT_DOWN, this::down).build();
             protected final Button delButton = Button.builder(REMOVE_LIST_ELEMENT, this::rem).build();
@@ -1467,12 +1486,6 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             }
 
             @Override
-            public void setHeight(final int pHeight) {
-                super.setHeight(pHeight);
-                updateLayout();
-            }
-
-            @Override
             public void setWidth(int pWidth) {
                 super.setWidth(pWidth);
                 updateLayout();
@@ -1489,15 +1502,50 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 delButton.setY(getY());
                 label.setY(getY());
 
-                upButton.setHeight(getHeight());
-                downButton.setHeight(getHeight());
-                delButton.setHeight(getHeight());
-                label.setHeight(getHeight());
-
                 upButton.setWidth(getHeight());
                 downButton.setWidth(getHeight());
                 delButton.setWidth(getHeight());
                 label.setWidth(getWidth() - 3 * (getHeight() + 2));
+            }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(upButton, label, downButton, delButton);
+            }
+
+            @Override
+            public boolean isDragging() {
+                return dragging;
+            }
+
+            @Override
+            public void setDragging(boolean dragging) {
+                this.dragging = dragging;
+            }
+
+            @Override
+            public GuiEventListener getFocused() {
+                return focused;
+            }
+
+            @Override
+            public void setFocused(GuiEventListener focused) {
+                this.focused = focused;
+            }
+
+            // The row is a single widget, so a press has to be handed to the button it lands on.
+            @Override
+            public boolean mouseClicked(double mouseX, double mouseY, int button) {
+                if (!this.active || !this.visible) {
+                    return false;
+                }
+                for (final GuiEventListener child : this.children()) {
+                    if (child.mouseClicked(mouseX, mouseY, button)) {
+                        this.setFocused(child);
+                        return true;
+                    }
+                }
+                return false;
             }
 
             void up(final Button button) {

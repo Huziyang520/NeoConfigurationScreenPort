@@ -2,9 +2,8 @@ plugins {
     id 'fabric-loom'
 }
 
-// Neo Configuration Screen Port: the screen is ported against Forge classes (ForgeConfigSpec, ConfigTracker),
-// so the shared sources stay out of the Fabric module until the Fabric adapter lands.
-// sourceSets.main.java.srcDirs += ['../common/src/main/java']
+// The screen is shared with the Forge module; the config API comes from Forge Config API Port at compile time.
+sourceSets.main.java.srcDirs += ['../common/src/main/java']
 sourceSets.main.resources.srcDirs += ['../common/src/main/resources']
 
 dependencies {
@@ -17,6 +16,10 @@ dependencies {
 
     // Forge Config API Port：Fabric 侧的配置数据源，编译期依赖，运行期由玩家安装
     modCompileOnly "maven.modrinth:forge-config-api-port:${fcap_version}"
+    // Mod Menu：客户端配置按钮，运行期可选
+    modCompileOnly "maven.modrinth:modmenu:${modmenu_version}"
+    // 共享源码的 @Nullable / @ApiStatus 来自这个注解库
+    compileOnly 'org.jetbrains:annotations:24.0.1'
 }
 
 loom {
