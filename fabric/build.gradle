@@ -3,6 +3,12 @@ plugins {
 }
 
 // The screen is shared with the Forge module; the config API comes from Forge Config API Port at compile time.
+sourceSets {
+    // Type-only stub for the loader ModContainer; compiled separately so it never lands in the jar
+    stubContainer {
+        java.srcDir 'stubs/java'
+    }
+}
 sourceSets.main.java.srcDirs += ['../common/src/main/java']
 sourceSets.main.resources.srcDirs += ['../common/src/main/resources']
 
@@ -20,7 +26,11 @@ dependencies {
     modCompileOnly "maven.modrinth:modmenu:${modmenu_version}"
     // 共享源码的 @Nullable / @ApiStatus 来自这个注解库
     compileOnly 'org.jetbrains:annotations:24.0.1'
+    // 与 NeoForge 同签名的 ModContainer 构造器只参与编译；桩类不进产物
+    compileOnly sourceSets.stubContainer.output
 }
+
+compileJava.dependsOn tasks.named('compileStubContainerJava')
 
 loom {
     runs {

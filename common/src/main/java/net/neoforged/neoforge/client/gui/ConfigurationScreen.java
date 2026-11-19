@@ -61,6 +61,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.config.ModConfig.Type;
 import com.huziyang.neoconfigurationscreenport.internal.ModConfigs;
@@ -284,16 +285,16 @@ public final class ConfigurationScreen extends OptionsSubScreen {
         this.sectionScreen = sectionScreen;
     }
 
-    // Neo Configuration Screen Port: the loader's ModContainer stays untyped so the same call compiles on both loaders
-    public ConfigurationScreen(final Object modContainer, final Screen parent) {
+    // Neo Configuration Screen Port: NeoForge's ModContainer signatures are kept so compiled callers keep linking
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent) {
         this(ModLists.modIdOf(modContainer), parent);
     }
 
-    public ConfigurationScreen(final Object modContainer, final Screen parent, ConfigurationSectionScreen.Filter filter) {
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, ConfigurationSectionScreen.Filter filter) {
         this(ModLists.modIdOf(modContainer), parent, filter);
     }
 
-    public ConfigurationScreen(final Object modContainer, final Screen parent, QuadFunction<ConfigurationScreen, ModConfig.Type, ModConfig, Component, Screen> sectionScreen) {
+    public ConfigurationScreen(final ModContainer modContainer, final Screen parent, QuadFunction<ConfigurationScreen, ModConfig.Type, ModConfig, Component, Screen> sectionScreen) {
         this(ModLists.modIdOf(modContainer), parent, sectionScreen);
     }
 
