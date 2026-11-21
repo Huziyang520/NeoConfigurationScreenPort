@@ -1496,7 +1496,8 @@ public final class ConfigurationScreen extends OptionsSubScreen {
                 upButton.setX(getX());
                 downButton.setX(getX() + getHeight() + 2);
                 delButton.setX(getX() + getWidth() - getHeight());
-                label.setX(getX() + 2 * 22);
+                // The label starts right after two buttons, and it needs a height or the text is drawn above the row
+                label.setX(getX() + 2 * (getHeight() + 2));
 
                 upButton.setY(getY());
                 downButton.setY(getY());
@@ -1564,7 +1565,9 @@ public final class ConfigurationScreen extends OptionsSubScreen {
             @Override
             protected void renderWidget(final GuiGraphics pGuiGraphics, final int pMouseX, final int pMouseY, final float pPartialTick) {
                 checkButtons();
-                label.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
+                // 1.20.1 centres a StringWidget's text against its own height, which stays 0 for this row label, so the
+                // text is placed explicitly to line up with the buttons next to it.
+                pGuiGraphics.drawString(font, label.getMessage(), label.getX() + 2, getY() + (getHeight() - 9) / 2 + 1, 0xFFFFFF, false);
                 if (!isFirst) {
                     upButton.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
                 }
