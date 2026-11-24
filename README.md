@@ -57,6 +57,21 @@ Translation keys follow NeoForge's scheme: `<mod id>.configuration.<path>` for v
 `<mod id>.configuration.section.<file>` for the entry in the file overview. Anything you leave out
 falls back to the comment written in the config spec.
 
+### 🛠️ In a development workspace
+
+The jar in `build/libs` is reobfuscated for production, so a Gradle userdev runtime cannot link
+against it. Build the dev artifact (`gradlew :forge:devJar`, also run by `build`) and put the
+`-dev` jar from `forge/build/devlibs` on your development classpath:
+
+```groovy
+dependencies {
+    implementation fileTree('libs') { include '*-dev.jar' }
+}
+```
+
+Fabric's dev jar is the one Loom writes to `fabric/build/devlibs`. A `-dev` jar is for development
+only: do not put it into an instance's `mods` folder and do not ship it.
+
 ## ⚠️ Known differences on this game version
 
 - There is no startup config type, so a value that only takes effect after a game restart shows the
@@ -132,6 +147,21 @@ ConfigScreenRegistration.register(MOD_ID);
 翻译键沿用 NeoForge 的规则：值是 `<模组 id>.configuration.<路径>`，标题是
 `<模组 id>.configuration.title`，文件总览里的一行是 `<模组 id>.configuration.section.<文件名>`。
 缺失的部分回退到配置规格里写的注释。
+
+### 🛠️ 开发环境
+
+`build/libs` 里的 jar 经过生产环境重混淆，Gradle userdev 运行时链接不上。开发时改用 dev 产物
+（`gradlew :forge:devJar`，`build` 也会执行），把 `forge/build/devlibs` 里的 `-dev` jar
+放到开发 classpath：
+
+```groovy
+dependencies {
+    implementation fileTree('libs') { include '*-dev.jar' }
+}
+```
+
+Fabric 的 dev jar 由 Loom 输出在 `fabric/build/devlibs`。`-dev` jar 只用于开发：
+不要放进实例的 `mods`，也不要随发布分发。
 
 ## ⚠️ 本游戏版本的已知差异
 

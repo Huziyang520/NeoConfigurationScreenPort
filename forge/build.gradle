@@ -28,3 +28,18 @@ dependencies {
 jar {
     finalizedBy 'reobfJar'
 }
+
+// Userdev resolves Minecraft under official names; the reobfuscated release jar only links in a
+// production runtime. This jar is the one to put on a development classpath, never into mods/.
+tasks.register('devJar', Jar) {
+    archiveClassifier = 'dev'
+    destinationDirectory = layout.buildDirectory.dir('devlibs')
+    from sourceSets.main.output
+    from(rootProject.file('LICENSE'))
+    from(rootProject.file('LICENSE-LGPL-2.1.md'))
+    from(rootProject.file('LICENSING.md'))
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('devJar')
+}
